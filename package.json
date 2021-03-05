@@ -1,0 +1,21 @@
+{
+  "name": "projects",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www",
+    "develop": "nodemon ./bin/www"
+  },
+  "dependencies": {
+    "@admin-bro/express": "^3.1.0",
+    "admin-bro": "^3.4.0",
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "express": "^4.17.1",
+    "express-formidable": "^1.2.0",
+    "http-errors": "~1.6.3",
+    "jade": "~1.11.0",
+    "mongoose": "^5.11.19",
+    "morgan": "~1.9.1"
+  }
+}
