@@ -8,14 +8,31 @@
   },
   "dependencies": {
     "@admin-bro/express": "^3.1.0",
+    "@admin-bro/mongoose": "^1.1.0",
     "admin-bro": "^3.4.0",
+    "bcrypt-nodejs": "^0.0.3",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
+    "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-formidable": "^1.2.0",
+    "express-session": "^1.17.1",
     "http-errors": "~1.6.3",
     "jade": "~1.11.0",
     "mongoose": "^5.11.19",
-    "morgan": "~1.9.1"
+    "mongoose-paginate": "^5.0.3",
+    "mongoose-timestamp": "^0.6.0",
+    "mongoose-timestamps": "^0.0.1",
+    "morgan": "~1.9.1",
+    "tslib": "^2.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.21.0",
+    "eslint-config-airbnb": "^18.2.1",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-react": "^7.22.0",
+    "eslint-plugin-react-hooks": "^4.2.0",
+    "nodemon": "^2.0.7"
   }
 }
