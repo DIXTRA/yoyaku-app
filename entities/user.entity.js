@@ -10,12 +10,12 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, required: true },
   country: { type: String, required: true },
   city: { type: String, required: true },
-  nationality: { type: mongoose.Schema.Types.ObjectId, ref: "Nationality" },
-  platform: { type: mongoose.Schema.Types.ObjectId, ref: "Platform" },
+  //nationality: { type: mongoose.Schema.Types.ObjectId, ref: "Nationality" },
+  //platform: { type: mongoose.Schema.Types.ObjectId, ref: "Platform" },
   dni: { type: String, default: "", index: true }, // identity document number (ci/dni)
   taxDocument: { type: String, default: "", index: true }, // business rut/cuit/nif number
   role: { type: Number, default: 0, index: true }, //0 member, 1 admin, 2 leader
-  password: { type: String, required: true },
+  encryptedPassword: { type: String, required: true },
   profileUrl: { type: String, default: "" },
   profileCompleted: { type: Boolean, default: false },
 
@@ -46,7 +46,7 @@ UserSchema.methods.generateHash = (password) => {
 };
 
 // checking if password is valid
-UserSchema.methods.validPassword = (password) => {
+UserSchema.methods.validPassword = async (password) => {
   return bcrypt.compareSync(password, this.password);
 };
 
