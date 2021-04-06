@@ -2,10 +2,10 @@ const mongoose = require('mongoose');
 const paginator = require('mongoose-paginate');
 const bcrypt = require('bcrypt-nodejs');
 
-const { Schema } = mongoose;
+const { Schema, model } = mongoose;
 const { ObjectId } = Schema.Types;
 
-const UserSchema = new mongoose.Schema({
+const UserSchema = new Schema({
   firstName: { type: String, default: '', index: true },
   lastName: { type: String, default: '', index: true },
   phoneNumber: { type: String, default: null, index: true },
@@ -53,6 +53,6 @@ UserSchema.methods.generatePasswordResetToken = (identifier) => {
   return token;
 };
 
-const User = mongoose.model('User', UserSchema);
+const User = model('User', UserSchema);
 
 module.exports = { UserSchema, User };

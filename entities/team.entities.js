@@ -1,15 +1,15 @@
 const mongoose = require('mongoose');
 
-const { Schema } = mongoose;
+const { Schema, model } = mongoose;
 const { ObjectId } = Schema.Types;
 
-const TeamSchema = new mongoose.Schema({
+const TeamSchema = new Schema({
   slackId: { type: String },
   name: { type: String },
   icon: { type: String },
   offices: [{ type: ObjectId, required: true }],
 });
 
-const Team = mongoose.model('Team', TeamSchema);
+const Team = model('Team', TeamSchema);
 
 module.exports = { TeamSchema, Team };
