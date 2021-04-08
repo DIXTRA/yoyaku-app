@@ -1,66 +1,82 @@
-const createError = require("http-errors");
-const express = require("express");
-const path = require("path");
-const mongoose = require("mongoose");
-const cookieParser = require("cookie-parser");
-const logger = require("morgan");
-const AdminBro = require("admin-bro");
+/* eslint-disable no-console */
+const { App, ExpressReceiver } = require('@slack/bolt');
+const mongoose = require('mongoose');
+const AdminBro = require('admin-bro');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+const createError = require('http-errors');
+const path = require('path');
+const options = require('./admin/admin.options');
+const buildAdminRouter = require('./admin/admin.router');
+require('dotenv').config();
 
-const app = express();
 const PORT = process.env.PORT || 4000;
+const adminBro = new AdminBro(options);
+const router = buildAdminRouter(adminBro);
 
-require("dotenv").config();
+// Create a Bolt Receiver
+const receiver = new ExpressReceiver({
+  signingSecret: process.env.SLACK_SIGNING_SECRET,
+});
 
-const options = require("./admin/admin.options");
-const buildAdminRouter = require("./admin/admin.router");
+// Create the Bolt App, using the receiver
+const app = new App({
+  token: process.env.SLACK_BOT_TOKEN,
+  receiver,
+});
 
-const indexRouter = require("./routes/index");
-const usersRouter = require("./routes/users");
+// Slack interactions are methods on app
 
-const run = async () => {
-  const connection = await mongoose.connect(process.env.MONGODB_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+app.message('hello', async ({ message, say }) => {
+  // say() sends a message to the channel where the event was triggered
+  await say(`Hey there <@${message.user}>!`);
+});
 
-  const adminBro = new AdminBro(options);
-  const router = buildAdminRouter(adminBro);
-  app.use(adminBro.options.rootPath, router);
-  
-  // // view engine setup
-  // app.set("views", path.join(__dirname, "views"));
-  // app.set("view engine", "jade");
+// Other web requests are methods on receiver.router
+receiver.router.use(adminBro.options.rootPath, router);
 
-  // app.use(logger("dev"));
-  // app.use(express.json());
-  // app.use(express.urlencoded({ extended: false }));
-  // app.use(cookieParser());
-  // app.use(express.static(path.join(__dirname, "public")));
+// // view engine setup
+// app.set("views", path.join(__dirname, "views"));
+// app.set("view engine", "jade");
 
-  // app.use("/", indexRouter);
-  // app.use("/users", usersRouter);
+// app.use(logger("dev"));
+// app.use(express.json());
+// app.use(express.urlencoded({ extended: false }));
+// app.use(cookieParser());
+// app.use(express.static(path.join(__dirname, "public")));
 
-  // // catch 404 and forward to error handler
-  // app.use((req, res, next) => {
-  //   next(createError(404));
-  // });
+// app.use("/", indexRouter);
+// app.use("/users", usersRouter);
 
-  // // error handler
-  // app.use((err, req, res, next) => {
-  //   // set locals, only providing error in development
-  //   res.locals.message = err.message;
-  //   res.locals.error = req.app.get("env") === "development" ? err : {};
+// // catch 404 and forward to error handler
+// app.use((req, res, next) => {
+//   next(createError(404));
+// });
 
-  //   // render the error page
-  //   res.status(err.status || 500);
-  //   res.render("error");
-  // });
+// // error handler
+// app.use((err, req, res, next) => {
+//   // set locals, only providing error in development
+//   res.locals.message = err.message;
+//   res.locals.error = req.app.get("env") === "development" ? err : {};
 
-  app.listen(PORT, () => {
-    console.log(`Listening to app at http://locahost:${PORT}`);
-  });
-};
+//   // render the error page
+//   res.status(err.status || 500);
+//   res.render("error");
+// });
 
-run();
+(async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      useFindAndModify: false,
+      useCreateIndex: true,
+    });
+    await app.start(PORT);
+    console.log('⚡️ Bolt app is running!');
+  } catch (e) {
+    console.log(e);
+  }
+})();
 
 module.exports = app;
