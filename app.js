@@ -1,14 +1,16 @@
 /* eslint-disable no-console */
-const { App, ExpressReceiver } = require('@slack/bolt');
-const mongoose = require('mongoose');
-const AdminBro = require('admin-bro');
-const cookieParser = require('cookie-parser');
-const logger = require('morgan');
-const createError = require('http-errors');
-const path = require('path');
-const options = require('./admin/admin.options');
-const buildAdminRouter = require('./admin/admin.router');
-require('dotenv').config();
+const { App, ExpressReceiver } = require("@slack/bolt");
+const mongoose = require("mongoose");
+const AdminBro = require("admin-bro");
+const cookieParser = require("cookie-parser");
+const logger = require("morgan");
+const createError = require("http-errors");
+const path = require("path");
+const options = require("./admin/admin.options");
+const buildAdminRouter = require("./admin/admin.router");
+const reserve = require("./components/reserve");
+const { throws } = require("assert");
+require("dotenv").config();
 
 const PORT = process.env.PORT || 4000;
 const adminBro = new AdminBro(options);
@@ -27,9 +29,35 @@ const app = new App({
 
 // Slack interactions are methods on app
 
-app.message('hello', async ({ message, say }) => {
-  // say() sends a message to the channel where the event was triggered
-  await say(`Hey there <@${message.user}>!`);
+app.command("/reserve", async ({ ack, body, client }) => {
+  await ack();
+
+  const modal = reserve;
+  modal.trigger_id = body.trigger_id;
+
+  try {
+    await client.views.open(modal);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.view("reserve", async ({ ack, body, view, client }) => {
+  await ack();
+
+  const form = view.state.values;
+  const user = body.user.id;
+
+  const reservationInfo = {
+    date: form.date_input["datepicker-action"].selected_date,
+    room: form.site_input["static_select-action"].selected_option.value,
+    user,
+  };
+
+  try {
+  } catch (e) {
+    console.log(e);
+  }
 });
 
 // Other web requests are methods on receiver.router
@@ -73,7 +101,7 @@ receiver.router.use(adminBro.options.rootPath, router);
       useCreateIndex: true,
     });
     await app.start(PORT);
-    console.log('⚡️ Bolt app is running!');
+    console.log("⚡️ Bolt app is running!");
   } catch (e) {
     console.log(e);
   }
