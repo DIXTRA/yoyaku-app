@@ -1,40 +1,151 @@
-const express = require('express');
-const AdminBro = require('admin-bro');
+/* eslint-disable no-console */
+const { App, ExpressReceiver } = require('@slack/bolt');
 const mongoose = require('mongoose');
-const { createEventAdapter } = require('@slack/events-api');
-const { createMessageAdapter } = require('@slack/interactive-messages');
-const { WebClient } = require('@slack/web-api');
-const buildAdminRouter = require('./admin/admin.router');
+const AdminBro = require('admin-bro');
 const options = require('./admin/admin.options');
+const buildAdminRouter = require('./admin/admin.router');
 require('dotenv').config();
 
-const port = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4000;
 const adminBro = new AdminBro(options);
 const router = buildAdminRouter(adminBro);
-const app = express();
-const token = process.env.SLACK_BOT_TOKEN;
-const webClient = new WebClient(token);
 
-const slackEvents = createEventAdapter(process.env.SLACK_SIGNING_SECRET);
-const slackInteractions = createMessageAdapter(process.env.SLACK_SIGNING_SECRET);
-
-app.use(adminBro.options.rootPath, router);
-app.use('/slack/events', slackEvents.expressMiddleware());
-app.use('/slack/actions', slackInteractions.expressMiddleware());
-
-app.use(express.json());
-
-slackEvents.on('message', async (event) => {
-  console.log(`Received a message event: user ${event.user} in channel ${event.channel} says ${event.text}`);
+// Create a Bolt Receiver
+const receiver = new ExpressReceiver({
+  signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
 
-// Starts server
-app.listen(port, async () => {
-  await mongoose.connect(process.env.MONGODB_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+// Create the Bolt App, using the receiver
+const app = new App({
+  token: process.env.SLACK_BOT_TOKEN,
+  receiver,
+});
+
+// Slack interactions are methods on app
+
+app.message('hello', async ({ message, say }) => {
+  // say() sends a message to the channel where the event was triggered
+  await say(`Hey there <@${message.user}>!`);
+});
+
+app.command('/yoyaku', async ({
+  client, ack, say, body,
+}) => {
+  // Acknowledge the command request
+  await ack();
+
+  try {
+    // Call views.open with the built-in client
+    const result = await client.views.open({
+      // Pass a valid trigger_id within 3 seconds of receiving it
+      trigger_id: body.trigger_id,
+      // View payload
+      view: {
+        type: 'modal',
+        // View identifier
+        callback_id: 'view_1',
+        title: {
+          type: 'plain_text',
+          text: 'Modal title',
+        },
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: 'Welcome to a modal with _blocks_',
+            },
+            accessory: {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: 'Click me!',
+              },
+              action_id: 'button_abc',
+            },
+          },
+          {
+            type: 'input',
+            block_id: 'input_c',
+            label: {
+              type: 'plain_text',
+              text: 'What are your hopes and dreams?',
+            },
+            element: {
+              type: 'plain_text_input',
+              action_id: 'dreamy_input',
+              multiline: true,
+            },
+          },
+        ],
+        submit: {
+          type: 'plain_text',
+          text: 'Submit',
+        },
+      },
+    });
+    console.log(result);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.action({ callback_id: 'view_1' }, async ({ action, ack }) => {
+  // it’s a valid email, accept the submission
+  // if it isn’t a valid email, acknowledge with an error
+  await ack({
+    errors: [{
+      name: 'email_address',
+      error: 'Sorry, this isn’t a valid email',
+    }],
   });
-  console.log(`Server is listening on port ${port}`);
 });
+
+// Other web requests are methods on receiver.router
+receiver.router.use(adminBro.options.rootPath, router);
+
+// // view engine setup
+// app.set("views", path.join(__dirname, "views"));
+// app.set("view engine", "jade");
+
+// app.use(logger("dev"));
+// app.use(express.json());
+// app.use(express.urlencoded({ extended: false }));
+// app.use(cookieParser());
+// app.use(express.static(path.join(__dirname, "public")));
+
+// app.use("/", indexRouter);
+// app.use("/users", usersRouter);
+
+// // catch 404 and forward to error handler
+// app.use((req, res, next) => {
+//   next(createError(404));
+// });
+
+// // error handler
+// app.use((err, req, res, next) => {
+//   // set locals, only providing error in development
+//   res.locals.message = err.message;
+//   res.locals.error = req.app.get("env") === "development" ? err : {};
+
+//   // render the error page
+//   res.status(err.status || 500);
+//   res.render("error");
+// });
+
+(async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      useFindAndModify: false,
+      useCreateIndex: true,
+    });
+    await app.start(4000);
+    console.log('⚡️ Bolt app is running!');
+  } catch (e) {
+    console.log('el error', e);
+  }
+})();
 
 module.exports = app;
