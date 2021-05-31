@@ -3,7 +3,7 @@ const session = require("express-session");
 const MongoStore = require("connect-mongo").default;
 
 const { buildAuthenticatedRouter } = require("@admin-bro/express");
-const { User } = require("../entities/user.entity");
+const { User } = require("../entities/user.entities");
 /**
  *
  * @param {AdminBro} admin

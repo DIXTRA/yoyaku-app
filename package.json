@@ -9,6 +9,7 @@
   "dependencies": {
     "@admin-bro/express": "^3.1.0",
     "@admin-bro/mongoose": "^1.1.0",
+    "@slack/bolt": "^3.3.0",
     "@slack/events-api": "^3.0.0",
     "@slack/interactive-messages": "^2.0.1",
     "@slack/web-api": "^6.2.3",
@@ -23,6 +24,7 @@
     "express-session": "^1.17.1",
     "http-errors": "~1.6.3",
     "jade": "~1.11.0",
+    "moment": "^2.29.1",
     "mongoose": "^5.11.19",
     "mongoose-paginate": "^5.0.3",
     "mongoose-timestamp": "^0.6.0",
