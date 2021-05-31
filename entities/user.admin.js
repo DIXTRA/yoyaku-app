@@ -4,7 +4,7 @@ const {
   before: passwordBeforeHook,
   after: passwordAfterHook,
 } = require("../actions/password.hook");
-const { User } = require("./user.entity");
+const { User } = require("./user.entities");
 
 /** @type {AdminBro.ResourceOptions} */
 const options = {

@@ -1,12 +1,13 @@
 /* eslint-disable no-console */
-const { App, ExpressReceiver } = require('@slack/bolt');
-const mongoose = require('mongoose');
-const AdminBro = require('admin-bro');
-const options = require('./admin/admin.options');
-const buildAdminRouter = require('./admin/admin.router');
-require('dotenv').config();
-
+require("dotenv").config();
+const { App, ExpressReceiver } = require("@slack/bolt");
+const mongoose = require("mongoose");
+const AdminBro = require("admin-bro");
+const options = require("./admin/admin.options");
+const buildAdminRouter = require("./admin/admin.router");
+const ReservationController = require('./controllers/reservation.controllers');
 const PORT = process.env.PORT || 4000;
+
 const adminBro = new AdminBro(options);
 const router = buildAdminRouter(adminBro);
 
@@ -21,16 +22,7 @@ const app = new App({
   receiver,
 });
 
-// Slack interactions are methods on app
-
-app.message('hello', async ({ message, say }) => {
-  // say() sends a message to the channel where the event was triggered
-  await say(`Hey there <@${message.user}>!`);
-});
-
-app.command('/yoyaku', async ({
-  client, ack, say, body,
-}) => {
+app.command("/yoyaku", async ({ client, ack, say, body }) => {
   // Acknowledge the command request
   await ack();
 
@@ -41,46 +33,46 @@ app.command('/yoyaku', async ({
       trigger_id: body.trigger_id,
       // View payload
       view: {
-        type: 'modal',
+        type: "modal",
         // View identifier
-        callback_id: 'view_1',
+        callback_id: "view_1",
         title: {
-          type: 'plain_text',
-          text: 'Modal title',
+          type: "plain_text",
+          text: "Modal title",
         },
         blocks: [
           {
-            type: 'section',
+            type: "section",
             text: {
-              type: 'mrkdwn',
-              text: 'Welcome to a modal with _blocks_',
+              type: "mrkdwn",
+              text: "Welcome to a modal with _blocks_",
             },
             accessory: {
-              type: 'button',
+              type: "button",
               text: {
-                type: 'plain_text',
-                text: 'Click me!',
+                type: "plain_text",
+                text: "Click me!",
               },
-              action_id: 'button_abc',
+              action_id: "button_abc",
             },
           },
           {
-            type: 'input',
-            block_id: 'input_c',
+            type: "input",
+            block_id: "input_c",
             label: {
-              type: 'plain_text',
-              text: 'What are your hopes and dreams?',
+              type: "plain_text",
+              text: "What are your hopes and dreams?",
             },
             element: {
-              type: 'plain_text_input',
-              action_id: 'dreamy_input',
+              type: "plain_text_input",
+              action_id: "dreamy_input",
               multiline: true,
             },
           },
         ],
         submit: {
-          type: 'plain_text',
-          text: 'Submit',
+          type: "plain_text",
+          text: "Submit",
         },
       },
     });
@@ -90,16 +82,7 @@ app.command('/yoyaku', async ({
   }
 });
 
-app.action({ callback_id: 'view_1' }, async ({ action, ack }) => {
-  // it’s a valid email, accept the submission
-  // if it isn’t a valid email, acknowledge with an error
-  await ack({
-    errors: [{
-      name: 'email_address',
-      error: 'Sorry, this isn’t a valid email',
-    }],
-  });
-});
+app.command("/yoyaku-list", ReservationController.listReservationByDate);
 
 // Other web requests are methods on receiver.router
 receiver.router.use(adminBro.options.rootPath, router);
@@ -142,9 +125,9 @@ receiver.router.use(adminBro.options.rootPath, router);
       useCreateIndex: true,
     });
     await app.start(4000);
-    console.log('⚡️ Bolt app is running!');
+    console.log("⚡️ Bolt app is running!");
   } catch (e) {
-    console.log('el error', e);
+    console.log("el error", e);
   }
 })();
 
