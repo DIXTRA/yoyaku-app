@@ -285,10 +285,56 @@ const submitReserve = async ({
 
   const { date_input, site_input, frecuency_input } = view.state.values;
 
-  const date = date_input['datepicker-action'];
-  const site = site_input.options;
-  const frecuency = frecuency_input.options;
-  
+  const date = date_input['datepicker-action'].selected_date;
+  const office = site_input['static_select-action'].selected_option.value;
+  const frecuency = frecuency_input['checkboxes-action'];
+  const user = body.user.id;
+  const team = body.team.id;
+
+  if (!date) {
+    handleErrorForms('La fecha es inválida', 'date_input', ack);
+  }
+
+  if (!office) {
+    handleErrorForms('El lugar no es valido', 'site_input', ack);
+  }
+
+  if (!frecuency) {
+    handleErrorForms('El lugar no es valido', 'frecuency_input', ack);
+  }
+
+  let message;
+
+  const reservation = await Reservation.save({
+    date,
+    user,
+    office,
+    team,
+  });
+
+  if (!reservation) {
+    message = 'Hubo un error al crear la reserva';
+  } else {
+    message = 'Reserva creada correctamente';
+  }
+
+  await client.chat.postMessage({
+    channel: team,
+    text: message,
+  });
+};
+
+const handleErrorForms = (message, blockId, ack) => {
+  try {
+    ack({
+      response_action: 'errors',
+      errors: {
+        [blockId]: message,
+      },
+    });
+  } catch (error) {
+    console.log('error', error);
+  }
 };
 
 module.exports = {
