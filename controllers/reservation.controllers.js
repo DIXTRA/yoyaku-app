@@ -121,7 +121,7 @@ const newUserCard = (name, email, profilePhoto) => [
 const addReservation = async ({
   client, ack, say, body,
 }) => {
-  const options = await getOffice(body.user_id, say);
+  const options = await getRooms(body.user_id, say);
   await ack();
 
   try {
@@ -229,7 +229,7 @@ const addReservation = async ({
   }
 };
 
-const getOffice = async (slackId, say) => {
+const getRooms = async (slackId, say) => {
   const user = await User.findOne({ slackId });
   if (!user) {
     say(':scream: - Error: User not found.');
