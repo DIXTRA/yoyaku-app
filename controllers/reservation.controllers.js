@@ -1,9 +1,8 @@
 const moment = require('moment');
 
-const { UnsupportedMediaType } = require('http-errors');
 const { Reservation } = require('../entities/reservation.entities');
 const { User } = require('../entities/user.entities');
-const { Team } = require('../entities/team.entities');
+const { Office } = require('../entities/office.entities');
 
 const listReservationByDate = async ({
   client, ack, say, body,
@@ -22,9 +21,7 @@ const listReservationByDate = async ({
     date = new moment({ h: 0 });
   } else {
     if (!moment(text, 'DD/MM/YYYY').isValid()) {
-      say(
-        ':upside_down_face: *- Hey there, date format must be DD/MM/YYYY!*',
-      );
+      say(':upside_down_face: *- Hey there, date format must be DD/MM/YYYY!*');
       return;
     }
     date = new moment(text, 'DD/MM/YYYY');
@@ -124,11 +121,12 @@ const newUserCard = (name, email, profilePhoto) => [
 const addReservation = async ({
   client, ack, say, body,
 }) => {
+  const options = await getOffice(body.user_id, say);
   await ack();
 
   try {
     // Call views.open with the built-in client
-    const result = await client.views.open({
+    await client.views.open({
       // Pass a valid trigger_id within 3 seconds of receiving it
       trigger_id: body.trigger_id,
       // View payload
@@ -152,188 +150,182 @@ const addReservation = async ({
         },
         blocks: [
           {
-            type: 'section',
-            text: {
-              type: 'mrkdwn',
-              text: '*Selecciona día y lugar para concurrir',
-            },
-          },
-          {
-            type: 'divider',
-          },
-          {
-            type: 'section',
+            type: 'input',
             block_id: 'date_input',
-            text: {
-              type: 'mrkdwn',
-              text: 'Cuando vas a la oficina?',
-            },
-            accessory: {
+            element: {
               type: 'datepicker',
               initial_date: new Date().toISOString().split('T')[0],
-              placeholder: {
-                type: 'plain_text',
-                text: 'Select a date',
-                emoji: true,
-              },
               action_id: 'datepicker-action',
             },
-          },
-          {
-            type: 'section',
-            block_id: 'site_input',
-            text: {
-              type: 'mrkdwn',
-              text: ':clipboard: *A que espacio vas*',
-            },
-            accessory: {
-              type: 'static_select',
-              placeholder: {
-                type: 'plain_text',
-                text: 'Elige un lugar',
-                emoji: true,
-              },
-              options: [
-                {
-                  text: {
-                    type: 'plain_text',
-                    text: '*this is plain_text text*',
-                    emoji: true,
-                  },
-                  value: 'value-0',
-                },
-                {
-                  text: {
-                    type: 'plain_text',
-                    text: '*this is plain_text text*',
-                    emoji: true,
-                  },
-                  value: 'value-1',
-                },
-                {
-                  text: {
-                    type: 'plain_text',
-                    text: '*this is plain_text text*',
-                    emoji: true,
-                  },
-                  value: 'value-2',
-                },
-              ],
-              action_id: 'static_select-action',
+            label: {
+              type: 'plain_text',
+              text: 'Cuando vas a la oficina?',
+              emoji: true,
             },
           },
           {
-            type: 'section',
+            type: 'input',
             block_id: 'frecuency_input',
-            text: {
-              type: 'mrkdwn',
-              text: 'Es una reserva recurrente?',
-            },
-            accessory: {
+            element: {
               type: 'checkboxes',
               options: [
                 {
                   text: {
-                    type: 'mrkdwn',
-                    text: 'Repetir toda la semana',
+                    type: 'plain_text',
+                    text: 'Solo este día',
+                    emoji: true,
                   },
-                  description: {
-                    type: 'mrkdwn',
-                    text: 'Repetis la reserva toda la semana',
-                  },
-                  value: 'value-0',
+                  value: 'day',
                 },
                 {
                   text: {
-                    type: 'mrkdwn',
-                    text: 'Repetir todo el mes',
+                    type: 'plain_text',
+                    text: 'Esta semana',
+                    emoji: true,
                   },
-                  description: {
-                    type: 'mrkdwn',
-                    text: 'Repetis la reserva todo el mes',
-                  },
-                  value: 'value-1',
+                  value: 'week',
                 },
                 {
                   text: {
-                    type: 'mrkdwn',
-                    text: 'Repetir todo el año',
+                    type: 'plain_text',
+                    text: 'Siempre',
+                    emoji: true,
                   },
-                  description: {
-                    type: 'mrkdwn',
-                    text: 'Repetis la reserva todo el año',
-                  },
-                  value: 'value-2',
+                  value: 'all',
                 },
               ],
               action_id: 'checkboxes-action',
+            },
+            label: {
+              type: 'plain_text',
+              text: 'Selecciona un lugar',
+              emoji: true,
+            },
+          },
+          {
+            type: 'input',
+            block_id: 'site_input',
+            element: {
+              type: 'static_select',
+              placeholder: {
+                type: 'plain_text',
+                text: 'Selecciona un lugar',
+                emoji: true,
+              },
+              options,
+              action_id: 'static_select-action',
+            },
+            label: {
+              type: 'plain_text',
+              text: 'Label',
+              emoji: true,
             },
           },
         ],
       },
     });
-    console.log(result);
   } catch (error) {
-    console.error(error);
+    say(error);
   }
+};
+
+const getOffice = async (slackId, say) => {
+  const user = await User.findOne({ slackId });
+  if (!user) {
+    say(':scream: - Error: User not found.');
+    return;
+  }
+
+  const office = await Office.findById(user.office).populate(
+    'rooms',
+    'name _id',
+  );
+
+  if (!office) {
+    say(':scream: - Error: Office not found.');
+    return;
+  }
+
+  const { rooms } = office;
+
+  return rooms.map((room) => ({
+    text: {
+      type: 'plain_text',
+      text: room.name,
+      emoji: true,
+    },
+    value: room._id,
+  }));
 };
 
 const submitReserve = async ({
   ack, body, view, client,
 }) => {
-  await ack();
+  let errors = {};
 
   const { date_input, site_input, frecuency_input } = view.state.values;
 
   const date = date_input['datepicker-action'].selected_date;
-  const office = site_input['static_select-action'].selected_option.value;
-  const frecuency = frecuency_input['checkboxes-action'];
-  const user = body.user.id;
-  const team = body.team.id;
+  const room = site_input['static_select-action'].selected_option;
+  const frecuency = frecuency_input['checkboxes-action'].selected_options;
+  const slackId = body.user.id;
 
-  if (!date) {
-    handleErrorForms('La fecha es inválida', 'date_input', ack);
+  const user = await User.findOne({ slackId });
+  const currentDate = moment();
+  const invalidDate = !date || moment(date).diff(currentDate, 'days') < 0;
+
+  if (invalidDate) {
+    errors = {
+      response_action: 'errors',
+      errors: {
+        date_input: 'La fecha no es válida',
+      },
+    };
   }
 
-  if (!office) {
-    handleErrorForms('El lugar no es valido', 'site_input', ack);
+  if (!room) {
+    errors = {
+      response_action: 'errors',
+      errors: {
+        site_input: 'El lugar no es valido',
+      },
+    };
   }
 
-  if (!frecuency) {
-    handleErrorForms('El lugar no es valido', 'frecuency_input', ack);
+  if (!frecuency.length) {
+    errors = {
+      response_action: 'errors',
+      errors: {
+        recuency_input: 'El frecuencia no es válida',
+      },
+    };
   }
+
+  await ack(errors);
 
   let message;
 
-  const reservation = await Reservation.save({
-    date,
-    user,
-    office,
-    team,
-  });
+  const hasErrors = Object.keys(errors).length;
 
-  if (!reservation) {
-    message = 'Hubo un error al crear la reserva';
-  } else {
-    message = 'Reserva creada correctamente';
-  }
-
-  await client.chat.postMessage({
-    channel: team,
-    text: message,
-  });
-};
-
-const handleErrorForms = (message, blockId, ack) => {
-  try {
-    ack({
-      response_action: 'errors',
-      errors: {
-        [blockId]: message,
-      },
+  if (!hasErrors) {
+    const reservation = await Reservation.create({
+      date,
+      user: user._id,
+      team: user.team,
+      office: user.office,
+      room: room.value,
     });
-  } catch (error) {
-    console.log('error', error);
+
+    if (!reservation) {
+      message = 'Uuups hubo un error al crear tu reserva 🙁 🥺 vuelve a internarlo más tarde';
+    } else {
+      message = 'Tu reserva fue creada correctamente 🙌🏻 📩 📝';
+    }
+
+    await client.chat.postMessage({
+      channel: body.user.id,
+      text: message,
+    });
   }
 };
 
