@@ -134,6 +134,7 @@ const addReservation = async ({
       const roomName = command[1];
       const slackId = body.user_id;
       const user = await User.findOne({ slackId });
+      const currentDate = moment();
 
       if (!user) {
         say(':scream: - Error: User not found.');
@@ -146,14 +147,39 @@ const addReservation = async ({
         );
         return;
       }
-      const formatedDate = new moment(date, 'DD/MM/YYYY');
+
+      const formatedDate = new moment(date, 'DD/MM/YYYY').toDate();
+      const invalidDate = !date || moment(formatedDate).diff(currentDate, 'days') < 0;
+
+      if (invalidDate) {
+        say(':upside_down_face: *- La fecha seleccionada no es válida!*');
+        return;
+      }
+
       const room = await checkRoomExistence(body.user_id, say, roomName);
       if (!room) {
         say(':upside_down_face: *- No se encontró una sala con ese nombre');
         return;
       }
+
+      const currentReservations = await Reservation.find({
+        date: formatedDate,
+        office: user.office,
+        room: room._id,
+      });
+
+      const isRoomFull = currentReservations.length
+        && currentReservations.length >= currentReservations[0].room.maxCapacity;
+
+      if (isRoomFull) {
+        say(
+          ':upside_down_face: *- La sala selecciona no tiene más horarios disponibles',
+        );
+        return;
+      }
+
       const reservation = await Reservation.create({
-        date: formatedDate.toDate(),
+        date: formatedDate,
         user: user._id,
         team: user.team,
         office: user.office,
