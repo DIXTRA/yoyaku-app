@@ -1,8 +1,10 @@
 const moment = require('moment');
 
+const e = require('express');
 const { Reservation } = require('../entities/reservation.entities');
 const { User } = require('../entities/user.entities');
 const { Office } = require('../entities/office.entities');
+const { Room } = require('../entities/room.entities');
 
 const listReservationByDate = async ({
   client, ack, say, body,
@@ -124,106 +126,149 @@ const addReservation = async ({
   const options = await getRooms(body.user_id, say);
   await ack();
 
+  const { text } = body;
+
   try {
     // Call views.open with the built-in client
-    await client.views.open({
-      // Pass a valid trigger_id within 3 seconds of receiving it
-      trigger_id: body.trigger_id,
-      // View payload
-      view: {
-        callback_id: 'add_reserve',
-        type: 'modal',
-        title: {
-          type: 'plain_text',
-          text: 'Reserva tu lugar',
-          emoji: true,
-        },
-        submit: {
-          type: 'plain_text',
-          text: 'Reservar',
-          emoji: true,
-        },
-        close: {
-          type: 'plain_text',
-          text: 'Cancelar',
-          emoji: true,
-        },
-        blocks: [
-          {
-            type: 'input',
-            block_id: 'date_input',
-            element: {
-              type: 'datepicker',
-              initial_date: new Date().toISOString().split('T')[0],
-              action_id: 'datepicker-action',
-            },
-            label: {
-              type: 'plain_text',
-              text: 'Cuando vas a la oficina?',
-              emoji: true,
-            },
+    if (text) {
+      const command = text.split(' ');
+      const date = command[0];
+      const roomName = command[1];
+      const slackId = body.user_id;
+      const user = await User.findOne({ slackId });
+
+      if (!user) {
+        say(':scream: - Error: User not found.');
+        return;
+      }
+
+      if (!moment(date, 'DD/MM/YYYY').isValid()) {
+        say(
+          ':upside_down_face: *- Hey there, date format must be DD/MM/YYYY!*',
+        );
+        return;
+      }
+      const formatedDate = new moment(date, 'DD/MM/YYYY');
+      const room = await checkRoomExistence(body.user_id, say, roomName);
+      if (!room) {
+        say(':upside_down_face: *- No se encontró una sala con ese nombre');
+        return;
+      }
+      const reservation = await Reservation.create({
+        date: formatedDate.toDate(),
+        user: user._id,
+        team: user.team,
+        office: user.office,
+        room: room.value,
+      });
+
+      if (reservation) {
+        say('Tu reserva fue creada correctamente 🙌🏻 📩 📝');
+      } else {
+        say(
+          '  Uuups hubo un error al crear tu reserva 🙁 🥺 vuelve a internarlo más tarde',
+        );
+      }
+    } else {
+      await client.views.open({
+        // Pass a valid trigger_id within 3 seconds of receiving it
+        trigger_id: body.trigger_id,
+        // View payload
+        view: {
+          callback_id: 'add_reserve',
+          type: 'modal',
+          title: {
+            type: 'plain_text',
+            text: 'Reserva tu lugar',
+            emoji: true,
           },
-          {
-            type: 'input',
-            block_id: 'frecuency_input',
-            element: {
-              type: 'checkboxes',
-              options: [
-                {
-                  text: {
-                    type: 'plain_text',
-                    text: 'Solo este día',
-                    emoji: true,
-                  },
-                  value: 'day',
-                },
-                {
-                  text: {
-                    type: 'plain_text',
-                    text: 'Esta semana',
-                    emoji: true,
-                  },
-                  value: 'week',
-                },
-                {
-                  text: {
-                    type: 'plain_text',
-                    text: 'Siempre',
-                    emoji: true,
-                  },
-                  value: 'all',
-                },
-              ],
-              action_id: 'checkboxes-action',
-            },
-            label: {
-              type: 'plain_text',
-              text: 'Selecciona un lugar',
-              emoji: true,
-            },
+          submit: {
+            type: 'plain_text',
+            text: 'Reservar',
+            emoji: true,
           },
-          {
-            type: 'input',
-            block_id: 'site_input',
-            element: {
-              type: 'static_select',
-              placeholder: {
+          close: {
+            type: 'plain_text',
+            text: 'Cancelar',
+            emoji: true,
+          },
+          blocks: [
+            {
+              type: 'input',
+              block_id: 'date_input',
+              element: {
+                type: 'datepicker',
+                initial_date: new Date().toISOString().split('T')[0],
+                action_id: 'datepicker-action',
+              },
+              label: {
+                type: 'plain_text',
+                text: 'Cuando vas a la oficina?',
+                emoji: true,
+              },
+            },
+            {
+              type: 'input',
+              block_id: 'frecuency_input',
+              element: {
+                type: 'checkboxes',
+                options: [
+                  {
+                    text: {
+                      type: 'plain_text',
+                      text: 'Solo este día',
+                      emoji: true,
+                    },
+                    value: 'day',
+                  },
+                  {
+                    text: {
+                      type: 'plain_text',
+                      text: 'Esta semana',
+                      emoji: true,
+                    },
+                    value: 'week',
+                  },
+                  {
+                    text: {
+                      type: 'plain_text',
+                      text: 'Siempre',
+                      emoji: true,
+                    },
+                    value: 'all',
+                  },
+                ],
+                action_id: 'checkboxes-action',
+              },
+              label: {
                 type: 'plain_text',
                 text: 'Selecciona un lugar',
                 emoji: true,
               },
-              options,
-              action_id: 'static_select-action',
             },
-            label: {
-              type: 'plain_text',
-              text: 'Label',
-              emoji: true,
+            {
+              type: 'input',
+              block_id: 'site_input',
+              element: {
+                type: 'static_select',
+                placeholder: {
+                  type: 'plain_text',
+                  text: 'Selecciona un lugar',
+                  emoji: true,
+                },
+                options,
+                action_id: 'static_select-action',
+              },
+              label: {
+                type: 'plain_text',
+                text: 'Label',
+                emoji: true,
+              },
             },
-          },
-        ],
-      },
-    });
+          ],
+        },
+      });
+    }
   } catch (error) {
     say(error);
   }
@@ -258,6 +303,27 @@ const getRooms = async (slackId, say) => {
   }));
 };
 
+const checkRoomExistence = async (slackId, say, roomName) => {
+  const user = await User.findOne({ slackId });
+  if (!user) {
+    say(':scream: - Error: User not found.');
+    return;
+  }
+  const office = await Office.findById(user.office).populate(
+    'rooms',
+    'name _id',
+  );
+
+  if (!office) {
+    say(':scream: - Error: Office not found.');
+    return;
+  }
+
+  const { rooms } = office;
+
+  return rooms.find((room) => room.name === roomName);
+};
+
 const submitReserve = async ({
   ack, body, view, client,
 }) => {
@@ -273,6 +339,15 @@ const submitReserve = async ({
   const user = await User.findOne({ slackId });
   const currentDate = moment();
   const invalidDate = !date || moment(date).diff(currentDate, 'days') < 0;
+  const currentReservations = await Reservation.find({
+    date,
+    office: user.office,
+    room: room.value,
+  })
+    .populate('room', 'enabled maxCapacity')
+    .populate('office', 'enabled maxVisitsAWeek');
+  const isRoomFull = currentReservations.length
+    && currentReservations.length >= currentReservations[0].room.maxCapacity;
 
   if (invalidDate) {
     errors = {
@@ -287,7 +362,16 @@ const submitReserve = async ({
     errors = {
       response_action: 'errors',
       errors: {
-        site_input: 'El lugar no es valido',
+        site_input: 'Seleccione un lugar',
+      },
+    };
+  }
+
+  if (isRoomFull) {
+    errors = {
+      response_action: 'errors',
+      errors: {
+        site_input: 'No hay lugares disponible en esta sala',
       },
     };
   }
