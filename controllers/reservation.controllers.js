@@ -1,10 +1,8 @@
 const moment = require('moment');
 
-const e = require('express');
 const { Reservation } = require('../entities/reservation.entities');
 const { User } = require('../entities/user.entities');
 const { Office } = require('../entities/office.entities');
-const { Room } = require('../entities/room.entities');
 
 const listReservationByDate = async ({
   client, ack, say, body,
