@@ -1,11 +1,12 @@
 /* eslint-disable no-console */
-require("dotenv").config();
-const { App, ExpressReceiver } = require("@slack/bolt");
-const mongoose = require("mongoose");
-const AdminBro = require("admin-bro");
-const options = require("./admin/admin.options");
-const buildAdminRouter = require("./admin/admin.router");
+require('dotenv').config();
+const { App, ExpressReceiver } = require('@slack/bolt');
+const mongoose = require('mongoose');
+const AdminBro = require('admin-bro');
+const options = require('./admin/admin.options');
+const buildAdminRouter = require('./admin/admin.router');
 const ReservationController = require('./controllers/reservation.controllers');
+
 const PORT = process.env.PORT || 4000;
 
 const adminBro = new AdminBro(options);
@@ -22,8 +23,8 @@ const app = new App({
   receiver,
 });
 
-app.command("/yoyaku-list", ReservationController.listReservationByDate);
-app.command("/yoyaku-reserve", ReservationController.addReservation);
+app.command('/yoyaku-list', ReservationController.listReservationByDate);
+app.command('/yoyaku', ReservationController.addReservation);
 app.view('add_reserve', ReservationController.submitReserve);
 
 // Other web requests are methods on receiver.router
@@ -67,9 +68,9 @@ receiver.router.use(adminBro.options.rootPath, router);
       useCreateIndex: true,
     });
     await app.start(4000);
-    console.log("⚡️ Bolt app is running!");
+    console.log('⚡️ Bolt app is running!');
   } catch (e) {
-    console.log("el error", e);
+    console.log('el error', e);
   }
 })();
 
