@@ -172,25 +172,18 @@ const addReservation = async ({
         throw ':upside_down_face: *- Alcanzaste el máximo de reservas esta semana';
       }
 
-      const alreadyHaveReserve = await Reservation.findOne({
-        date: fullDate,
-        office: user.office,
-        room: room._id,
-        user: user._id,
-      });
+      const alreadyHaveReserve = await verifyAlreadyHaveReserve(
+        fullDate,
+        user.office,
+        room._id,
+        user._id,
+      );
 
       if (alreadyHaveReserve) {
         throw ':upside_down_face: *- Ya tienes una reserva para este día';
       }
 
-      const currentReservations = await Reservation.find({
-        date: fullDate,
-        office: user.office,
-        room: room._id,
-      });
-
-      const isRoomFull = currentReservations.length
-        && currentReservations.length >= currentReservations[0].room.maxCapacity;
+      const isRoomFull = await verifyRoomFull(fullDate, user.office, room._id);
 
       if (isRoomFull) {
         throw ':upside_down_face: *- La sala seleccionada no tiene más horarios disponibles';
@@ -364,6 +357,33 @@ const checkRoomExistence = async (slackId, say, roomName) => {
   return rooms.find((room) => room.name === roomName);
 };
 
+const verifyRoomFull = async (date, office, room) => {
+  const roomCurrentReservations = await Reservation.find({
+    date,
+    office,
+    room,
+  })
+    .populate('room', 'enabled maxCapacity')
+    .populate('office', 'enabled maxVisitsAWeek');
+
+  const isRoomFull = roomCurrentReservations.length
+    && roomCurrentReservations.length
+      >= roomCurrentReservations[0].room.maxCapacity;
+
+  return isRoomFull;
+};
+
+const verifyAlreadyHaveReserve = async (date, office, room, user) => {
+  const checkReserve = await Reservation.findOne({
+    date,
+    office,
+    room,
+    user,
+  });
+
+  return checkReserve;
+};
+
 const submitReserve = async ({
   ack, body, view, client,
 }) => {
@@ -380,33 +400,25 @@ const submitReserve = async ({
   const user = await User.findOne({ slackId });
   const currentDate = moment();
   const invalidDate = !date || moment(date).diff(currentDate, 'days') < 0;
-  const currentReservations = await Reservation.find({
-    date,
-    office: user.office,
-    room: room.value,
-  })
-    .populate('room', 'enabled maxCapacity')
-    .populate('office', 'enabled maxVisitsAWeek');
-  const isRoomFull = currentReservations.length
-    && currentReservations.length >= currentReservations[0].room.maxCapacity;
+  const isRoomFull = await verifyRoomFull(date, user.office, room.value);
 
   const startOfWeek = moment(date).startOf('isoWeek');
   const endOfWeek = moment(date).endOf('isoWeek');
 
   const query = { date: { $gt: startOfWeek, $lt: endOfWeek }, user: user._id };
   const currentOffice = await Office.findById(user.office);
-  const alreadyHaveReserve = await Reservation.findOne({
+  const alreadyHaveReserve = await verifyAlreadyHaveReserve(
     date,
-    office: user.office,
-    room: room.value,
-    user: user._id,
-  });
+    user.office,
+    room.value,
+    user._id,
+  );
 
   const weekResevationByUser = await Reservation.find(query);
 
   if (invalidDate) {
     errorObject.errors = {
-      date_input: 'La fecha no es válida',
+      date_input: 'La fecha debe ser futura',
     };
     errors = errorObject;
   }
@@ -432,6 +444,13 @@ const submitReserve = async ({
     errors = errorObject;
   }
 
+  if (weekResevationByUser.length > currentOffice.maxVisitsAWeek) {
+    errorObject.errors = {
+      date_input: 'Alcanzaste el máximo de reservas esta semana',
+    };
+    errors = errorObject;
+  }
+
   if (alreadyHaveReserve) {
     errorObject.errors = {
       date_input: 'Ya tienes una reserva para este día',
@@ -439,11 +458,85 @@ const submitReserve = async ({
     errors = errorObject;
   }
 
-  if (weekResevationByUser.length > currentOffice.maxVisitsAWeek) {
-    errorObject.errors = {
-      date_input: 'Alcanzaste el máximo de reservas esta semana',
-    };
-    errors = errorObject;
+  let reservation;
+
+  const verifyEachDay = async (_day) => {
+    const repeteadDay = await verifyAlreadyHaveReserve(
+      _day,
+      user.office,
+      room.value,
+      user._id,
+    );
+    const roomFull = await verifyRoomFull(_day, user.office, room.value);
+
+    if (repeteadDay) {
+      errorObject.errors = {
+        date_input: `No es posible agendarte, ya tienes una reserva para el día ${moment(
+          _day,
+        ).format('DD/MM/YYYY')}`,
+      };
+      errors = errorObject;
+      return;
+    }
+
+    if (roomFull) {
+      errorObject.errors = {
+        date_input: `No es posible agendarte, el día ${moment(_day).format(
+          'DD/MM/YYYY',
+        )} tiene la sala llena`,
+      };
+      errors = errorObject;
+      return;
+    }
+
+    const reservationPromise = await Reservation.create({
+      date: _day,
+      user: user._id,
+      team: user.team,
+      office: user.office,
+      room: room.value,
+    });
+
+    return reservationPromise;
+  };
+
+  if (frecuency.value === 'day') {
+    reservation = await Reservation.create({
+      date,
+      user: user._id,
+      team: user.team,
+      office: user.office,
+      room: room.value,
+    });
+  }
+
+  if (frecuency.value === 'week') {
+    const start = moment(date).startOf('day');
+    const end = moment(date).endOf('isoWeek');
+
+    const days = [];
+    let day = start;
+
+    while (day <= end) {
+      days.push(day.toDate());
+      day = day.clone().add(1, 'd');
+    }
+
+    reservation = await Promise.all(days.map((_day) => verifyEachDay(_day)));
+  }
+
+  if (frecuency.value === 'month') {
+    const start = moment(date).startOf('day');
+    const end = moment(date).endOf('month');
+    const days = [];
+    let day = start;
+
+    while (day <= end) {
+      days.push(day.toDate());
+      day = day.clone().add(1, 'd');
+    }
+
+    reservation = await Promise.all(days.map((_day) => verifyEachDay(_day)));
   }
 
   await ack(errors);
@@ -453,73 +546,17 @@ const submitReserve = async ({
   const hasErrors = Object.keys(errors).length;
 
   if (!hasErrors) {
-    let reservation;
-    if (frecuency.value === 'day') {
-      reservation = await Reservation.create({
-        date,
-        user: user._id,
-        team: user.team,
-        office: user.office,
-        room: room.value,
-      });
-    }
-
-    if (frecuency.value === 'week') {
-      const start = moment(date).startOf('day');
-      const end = moment(date).endOf('isoWeek');
-
-      const days = [];
-      let day = start;
-
-      while (day <= end) {
-        days.push(day.toDate());
-        day = day.clone().add(1, 'd');
-      }
-
-      reservation = days.map(
-        async (day) => await Reservation.create({
-          date: day,
-          user: user._id,
-          team: user.team,
-          office: user.office,
-          room: room.value,
-        }),
-      );
-    }
-
-    if (frecuency.value === 'month') {
-      const start = moment(date).startOf('day');
-      const end = moment(date).endOf('month');
-      const days = [];
-      let day = start;
-
-      while (day <= end) {
-        days.push(day.toDate());
-        day = day.clone().add(1, 'd');
-      }
-
-      reservation = days.map(
-        async (day) => await Reservation.create({
-          date: day,
-          user: user._id,
-          team: user.team,
-          office: user.office,
-          room: room.value,
-        }),
-      );
-    }
-
     if (!reservation) {
       message = 'Uuups hubo un error al crear tu reserva 🙁 🥺 vuelve a internarlo más tarde';
     } else {
       message = 'Tu reserva fue creada correctamente 🙌🏻 📩 📝';
     }
-
-    await client.chat.postMessage({
-      channel: body.user.id,
-      text: message,
-    });
   }
+
+  await client.chat.postMessage({
+    channel: body.user.id,
+    text: message,
+  });
 };
 
 module.exports = {
