@@ -135,35 +135,31 @@ const addReservation = async ({
       const slackId = body.user_id;
       const user = await User.findOne({ slackId });
       const currentDate = moment();
+      const formattedDate = date && moment(date, 'DD/MM/YYYY');
 
       if (!user) {
-        say(':scream: - Error: User not found.');
-        return;
+        throw ':scream: - Error: User not found.';
       }
 
-      if (!moment(date, 'DD/MM/YYYY').isValid()) {
-        say(
-          ':upside_down_face: *- Hey there, date format must be DD/MM/YYYY!*',
-        );
-        return;
+      if (!formattedDate || !formattedDate.isValid()) {
+        throw ':upside_down_face: *- Hey there, date format must be DD/MM/YYYY!*';
       }
 
-      const formatedDate = new moment(date, 'DD/MM/YYYY').toDate();
-      const invalidDate = !date || moment(formatedDate).diff(currentDate, 'days') < 0;
+      const fullDate = formattedDate.toDate();
+
+      const invalidDate = !date || moment(fullDate).diff(currentDate, 'days') < 0;
 
       if (invalidDate) {
-        say(':upside_down_face: *- La fecha seleccionada no es válida!*');
-        return;
+        throw ':upside_down_face: *- La fecha debe ser futura !*';
       }
 
       const room = await checkRoomExistence(body.user_id, say, roomName);
       if (!room) {
-        say(':upside_down_face: *- No se encontró una sala con ese nombre');
-        return;
+        throw ':upside_down_face: *- No se encontró una sala con ese nombre';
       }
 
-      const startOfWeek = moment(formatedDate).startOf('isoWeek');
-      const endOfWeek = moment(formatedDate).endOf('isoWeek');
+      const startOfWeek = moment(fullDate).startOf('isoWeek');
+      const endOfWeek = moment(fullDate).endOf('isoWeek');
       const query = {
         date: { $gt: startOfWeek, $lt: endOfWeek },
         user: user._id,
@@ -172,15 +168,23 @@ const addReservation = async ({
 
       const weekResevationByUser = await Reservation.find(query);
 
-      const alreadyHaveReserve = await Reservation.find({
-        date: formatedDate,
+      if (weekResevationByUser.length > currentOffice.maxVisitsAWeek) {
+        throw ':upside_down_face: *- Alcanzaste el máximo de reservas esta semana';
+      }
+
+      const alreadyHaveReserve = await Reservation.findOne({
+        date: fullDate,
         office: user.office,
         room: room._id,
         user: user._id,
       });
 
+      if (alreadyHaveReserve) {
+        throw ':upside_down_face: *- Ya tienes una reserva para este día';
+      }
+
       const currentReservations = await Reservation.find({
-        date: formatedDate,
+        date: fullDate,
         office: user.office,
         room: room._id,
       });
@@ -189,26 +193,11 @@ const addReservation = async ({
         && currentReservations.length >= currentReservations[0].room.maxCapacity;
 
       if (isRoomFull) {
-        say(
-          ':upside_down_face: *- La sala seleccionada no tiene más horarios disponibles',
-        );
-        return;
-      }
-
-      if (alreadyHaveReserve.length) {
-        say(':upside_down_face: *- Ya tienes una reserva para este día');
-        return;
-      }
-
-      if (weekResevationByUser.length > currentOffice.maxVisitsAWeek) {
-        say(
-          ':upside_down_face: *- Alcanzaste el máximo de reservas esta semana',
-        );
-        return;
+        throw ':upside_down_face: *- La sala seleccionada no tiene más horarios disponibles';
       }
 
       const reservation = await Reservation.create({
-        date: formatedDate,
+        date: fullDate,
         user: user._id,
         team: user.team,
         office: user.office,
@@ -218,9 +207,7 @@ const addReservation = async ({
       if (reservation) {
         say('Tu reserva fue creada correctamente 🙌🏻 📩 📝');
       } else {
-        say(
-          '  Uuups hubo un error al crear tu reserva 🙁 🥺 vuelve a internarlo más tarde',
-        );
+        throw '  Uuups hubo un error al crear tu reserva 🙁 🥺 vuelve a internarlo más tarde';
       }
     } else {
       await client.views.open({
@@ -383,6 +370,7 @@ const submitReserve = async ({
   let errors = {};
 
   const { date_input, site_input, frecuency_input } = view.state.values;
+  const errorObject = { response_action: 'errors', errors: {} };
 
   const date = date_input['datepicker-action'].selected_date;
   const room = site_input['static_select-action'].selected_option;
@@ -407,7 +395,7 @@ const submitReserve = async ({
 
   const query = { date: { $gt: startOfWeek, $lt: endOfWeek }, user: user._id };
   const currentOffice = await Office.findById(user.office);
-  const alreadyHaveReserve = await Reservation.find({
+  const alreadyHaveReserve = await Reservation.findOne({
     date,
     office: user.office,
     room: room.value,
@@ -417,57 +405,45 @@ const submitReserve = async ({
   const weekResevationByUser = await Reservation.find(query);
 
   if (invalidDate) {
-    errors = {
-      response_action: 'errors',
-      errors: {
-        date_input: 'La fecha no es válida',
-      },
+    errorObject.errors = {
+      date_input: 'La fecha no es válida',
     };
+    errors = errorObject;
   }
 
   if (!room) {
-    errors = {
-      response_action: 'errors',
-      errors: {
-        site_input: 'Seleccione un lugar',
-      },
+    errorObject.errors = {
+      site_input: 'Seleccione un lugar',
     };
+    errors = errorObject;
   }
 
   if (!frecuency) {
-    errors = {
-      response_action: 'errors',
-      errors: {
-        date_input: 'El frecuencia no es válida',
-      },
+    errorObject.errors = {
+      date_input: 'La frecuencia no es válida',
     };
+    errors = errorObject;
   }
 
   if (isRoomFull) {
-    errors = {
-      response_action: 'errors',
-      errors: {
-        site_input: 'No hay lugares disponible en esta sala',
-      },
+    errorObject.errors = {
+      site_input: 'No hay lugares disponible en esta sala',
     };
+    errors = errorObject;
   }
 
-  if (alreadyHaveReserve.length) {
-    errors = {
-      response_action: 'errors',
-      errors: {
-        date_input: 'Ya tienes una reserva para este día',
-      },
+  if (alreadyHaveReserve) {
+    errorObject.errors = {
+      date_input: 'Ya tienes una reserva para este día',
     };
+    errors = errorObject;
   }
 
   if (weekResevationByUser.length > currentOffice.maxVisitsAWeek) {
-    errors = {
-      response_action: 'errors',
-      errors: {
-        date_input: 'Alcanzaste el máximo de reservas esta semana',
-      },
+    errorObject.errors = {
+      date_input: 'Alcanzaste el máximo de reservas esta semana',
     };
+    errors = errorObject;
   }
 
   await ack(errors);
