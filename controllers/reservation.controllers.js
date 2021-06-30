@@ -275,7 +275,7 @@ const addReservation = async ({
               },
               label: {
                 type: 'plain_text',
-                text: 'Selecciona un lugar',
+                text: 'Selecciona una frecuencia',
                 emoji: true,
               },
             },
