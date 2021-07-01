@@ -1,11 +1,12 @@
 /* eslint-disable no-console */
-require("dotenv").config();
-const { App, ExpressReceiver } = require("@slack/bolt");
-const mongoose = require("mongoose");
-const AdminBro = require("admin-bro");
-const options = require("./admin/admin.options");
-const buildAdminRouter = require("./admin/admin.router");
+require('dotenv').config();
+const { App, ExpressReceiver } = require('@slack/bolt');
+const mongoose = require('mongoose');
+const AdminBro = require('admin-bro');
+const options = require('./admin/admin.options');
+const buildAdminRouter = require('./admin/admin.router');
 const ReservationController = require('./controllers/reservation.controllers');
+
 const PORT = process.env.PORT || 4000;
 
 const adminBro = new AdminBro(options);
@@ -22,67 +23,9 @@ const app = new App({
   receiver,
 });
 
-app.command("/yoyaku", async ({ client, ack, say, body }) => {
-  // Acknowledge the command request
-  await ack();
-
-  try {
-    // Call views.open with the built-in client
-    const result = await client.views.open({
-      // Pass a valid trigger_id within 3 seconds of receiving it
-      trigger_id: body.trigger_id,
-      // View payload
-      view: {
-        type: "modal",
-        // View identifier
-        callback_id: "view_1",
-        title: {
-          type: "plain_text",
-          text: "Modal title",
-        },
-        blocks: [
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: "Welcome to a modal with _blocks_",
-            },
-            accessory: {
-              type: "button",
-              text: {
-                type: "plain_text",
-                text: "Click me!",
-              },
-              action_id: "button_abc",
-            },
-          },
-          {
-            type: "input",
-            block_id: "input_c",
-            label: {
-              type: "plain_text",
-              text: "What are your hopes and dreams?",
-            },
-            element: {
-              type: "plain_text_input",
-              action_id: "dreamy_input",
-              multiline: true,
-            },
-          },
-        ],
-        submit: {
-          type: "plain_text",
-          text: "Submit",
-        },
-      },
-    });
-    console.log(result);
-  } catch (error) {
-    console.error(error);
-  }
-});
-
-app.command("/yoyaku-list", ReservationController.listReservationByDate);
+app.command('/yoyaku-list', ReservationController.listReservationByDate);
+app.command('/yoyaku', ReservationController.addReservation);
+app.view('add_reserve', ReservationController.submitReserve);
 
 // Other web requests are methods on receiver.router
 receiver.router.use(adminBro.options.rootPath, router);
@@ -125,9 +68,9 @@ receiver.router.use(adminBro.options.rootPath, router);
       useCreateIndex: true,
     });
     await app.start(4000);
-    console.log("⚡️ Bolt app is running!");
+    console.log('⚡️ Bolt app is running!');
   } catch (e) {
-    console.log("el error", e);
+    console.log('el error', e);
   }
 })();
 
