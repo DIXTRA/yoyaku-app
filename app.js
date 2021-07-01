@@ -1,11 +1,16 @@
 /* eslint-disable no-console */
 require('dotenv').config();
-const { App, ExpressReceiver } = require('@slack/bolt');
+const { App, ExpressReceiver, LogLevel } = require('@slack/bolt');
 const mongoose = require('mongoose');
 const AdminBro = require('admin-bro');
 const options = require('./admin/admin.options');
 const buildAdminRouter = require('./admin/admin.router');
 const ReservationController = require('./controllers/reservation.controllers');
+const { scopes } = require('./utils/scopes');
+const {
+  storeInstallation,
+  fetchInstallation,
+} = require('./controllers/auth.controller');
 
 const PORT = process.env.PORT || 4000;
 
@@ -15,11 +20,20 @@ const router = buildAdminRouter(adminBro);
 // Create a Bolt Receiver
 const receiver = new ExpressReceiver({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
+  clientId: process.env.SLACK_CLIENT_ID,
+  clientSecret: process.env.SLACK_CLIENT_SECRET,
+  token: process.env.SLACK_BOT_TOKEN,
+  stateSecret: process.env.SLACK_STATE_SECRET,
+  logLevel: LogLevel.DEBUG,
+  scopes,
+  installationStore: {
+    storeInstallation,
+    fetchInstallation,
+  },
 });
 
 // Create the Bolt App, using the receiver
 const app = new App({
-  token: process.env.SLACK_BOT_TOKEN,
   receiver,
 });
 
@@ -67,7 +81,7 @@ receiver.router.use(adminBro.options.rootPath, router);
       useFindAndModify: false,
       useCreateIndex: true,
     });
-    await app.start(4000);
+    await app.start(PORT);
     console.log('⚡️ Bolt app is running!');
   } catch (e) {
     console.log('el error', e);
