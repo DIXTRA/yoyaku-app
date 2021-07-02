@@ -12,10 +12,10 @@ const UserSchema = new Schema({
   email: { type: String, required: true },
   slackId: { type: String },
   role: { type: String, default: 0, index: true },
-  encryptedPassword: { type: String, required: true },
+  encryptedPassword: { type: String },
   timezone: { type: String },
   team: { type: ObjectId, ref: 'Team' },
-  office: { type: ObjectId,  ref: 'Office' },
+  office: { type: ObjectId, ref: 'Office' },
   profilePhoto: { type: String },
   dob: {
     type: Date,
@@ -38,13 +38,9 @@ UserSchema.methods.validPassword = async (password) => bcrypt.compareSync(passwo
 UserSchema.methods.generateToken = () => {
   const stringUserId = `${this._id}`;
   const { role } = this;
-  const token = jwt.sign(
-    { userId: stringUserId, role },
-    process.env.SECRET,
-    {
-      expiresIn: '30d',
-    },
-  );
+  const token = jwt.sign({ userId: stringUserId, role }, process.env.SECRET, {
+    expiresIn: '30d',
+  });
   return token;
 };
 

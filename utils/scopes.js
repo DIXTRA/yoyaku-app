@@ -11,6 +11,8 @@ const scopes = [
   'mpim:history',
   'groups:read',
   'channels:manage',
+  'users:read',
+  'users:read.email',
 ];
 
 module.exports = { scopes };
