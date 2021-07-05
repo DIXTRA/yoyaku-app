@@ -44,6 +44,7 @@ const app = new App({
 
 app.command('/yoyaku-list', ReservationController.listReservationByDate);
 app.command('/yoyaku', ReservationController.addReservation);
+app.command('/yoyaku-delete', ReservationController.deleteReservation);
 app.view('add_reserve', ReservationController.submitReserve);
 
 // Other web requests are methods on receiver.router
