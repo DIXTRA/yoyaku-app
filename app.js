@@ -6,6 +6,7 @@ const AdminBro = require("admin-bro");
 const options = require("./admin/admin.options");
 const buildAdminRouter = require("./admin/admin.router");
 const ReservationController = require('./controllers/reservation.controllers');
+const UserController = require('./controllers/user.controllers');
 const PORT = process.env.PORT || 4000;
 
 const adminBro = new AdminBro(options);
@@ -83,6 +84,9 @@ app.command("/yoyaku", async ({ client, ack, say, body }) => {
 });
 
 app.command("/yoyaku-list", ReservationController.listReservationByDate);
+
+// When a user joins the team, is added to yoyaku
+app.event('team_join', UserController.registerUser);
 
 // Other web requests are methods on receiver.router
 receiver.router.use(adminBro.options.rootPath, router);

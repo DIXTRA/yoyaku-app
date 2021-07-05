@@ -3,16 +3,13 @@ const moment = require("moment");
 const { Reservation } = require("../entities/reservation.entities");
 const { User } = require("../entities/user.entities");
 const { Team } = require("../entities/team.entities");
-const { UnsupportedMediaType } = require("http-errors");
 
 const listReservationByDate = async ({ client, ack, say, body }) => {
   await ack();
 
   const {
     text,
-    team_id: slackTeamId,
     user_id: slackUserId,
-    channel_id: channelId,
   } = body;
 
   let date;
@@ -41,12 +38,12 @@ const listReservationByDate = async ({ client, ack, say, body }) => {
     date: date.toDate(),
     office: user.office,
   })
-    .populate("user", "email firstName lastName profilePhoto ")
+    .populate("user", "email name username profilePhoto ")
     .populate("office", "name");
 
   if (reservations.length === 0) {
     say(
-      `:calendar: *- No existen reservas para el ${date.format("DD/MM/YYYY")}.*`
+      `:calendar: *- No bookings for ${date.format("DD/MM/YYYY")}.*`
     );
     return;
   }
@@ -59,7 +56,7 @@ const listReservationByDate = async ({ client, ack, say, body }) => {
 
   for (let i = 0; i < reservations.length; i += 2) {
     let userData = reservations[i].user;
-    userData.name = `${userData.firstName} ${userData.lastName}`;
+    userData.name = userData.name || userData.username;
     const row = {
       type: "context",
       elements: newUserCard(
@@ -71,7 +68,7 @@ const listReservationByDate = async ({ client, ack, say, body }) => {
 
     if (reservations[i + 1]) {
       userData = reservations[i + 1].user;
-      userData.name = `${userData.firstName} ${userData.lastName}`;
+      userData.name = userData.name || userData.username;
       row.elements.concat(
         newUserCard(userData.name, userData.email, userData.profilePhoto)
       );

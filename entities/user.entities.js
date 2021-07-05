@@ -6,13 +6,13 @@ const { Schema, model } = mongoose;
 const { ObjectId } = Schema.Types;
 
 const UserSchema = new Schema({
-  firstName: { type: String, default: '', index: true },
-  lastName: { type: String, default: '', index: true },
+  name: { type: String, default: '', index: true },
+  username: { type: String, default: '', index: true },
   phoneNumber: { type: String, default: null, index: true },
   email: { type: String, required: true },
   slackId: { type: String },
   role: { type: String, default: 0, index: true },
-  encryptedPassword: { type: String, required: true },
+  encryptedPassword: { type: String, required: false, default: null },
   timezone: { type: String },
   team: { type: ObjectId, ref: 'Team' },
   office: { type: ObjectId,  ref: 'Office' },
