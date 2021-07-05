@@ -12,7 +12,7 @@ const saveUsers = async (users) => {
       first_name, last_name, phone, email, image_72,
     } = profile;
 
-    const role = is_admin || is_owner ? 1 : 0;
+    const role = Number(is_admin || is_owner);
 
     const team = await Team.findOne({
       slackId: team_id,
