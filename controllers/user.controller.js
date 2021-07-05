@@ -1,8 +1,8 @@
-const moment = require("moment");
+const moment = require('moment');
 
-const { Reservation } = require("../entities/reservation.entities");
-const { User } = require("../entities/user.entities");
-const { Team } = require("../entities/team.entities");
+const { Reservation } = require('../entities/reservation.entities');
+const { User } = require('../entities/user.entities');
+const { Team } = require('../entities/team.entities');
 
 const registerUser = async ({ event, client }) => {
   try {
@@ -14,13 +14,13 @@ const registerUser = async ({ event, client }) => {
       is_owner,
       tz: timezone,
     } = event.user;
-    const role = is_admin || is_owner ? "ADMIN" : "USER";
+    const role = is_admin || is_owner ? 'ADMIN' : 'USER';
 
     const team = await Team.findOne({ slackId: team_id });
 
     if (!team) {
       return new Error(
-        `No existe el team userId: ${slackId} - teamId: ${team_id}`
+        `No existe el team userId: ${slackId} - teamId: ${team_id}`,
       );
     }
 
@@ -39,8 +39,8 @@ const registerUser = async ({ event, client }) => {
       profilePhoto: userData.image_512,
     });
 
-    const user = await user.save();
-    console.log(`Usuario creado con éxito ${user}`);
+    const savedUser = await user.save();
+    console.log(`Usuario creado con éxito ${savedUser}`);
     return user;
   } catch (error) {
     console.error(error);
