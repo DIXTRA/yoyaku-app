@@ -50,6 +50,9 @@ app.view('add_reserve', ReservationController.submitReserve);
 // When a user joins the team, is added to yoyaku
 app.event('team_join', UserController.registerUser);
 
+// When a user joins the team, is added to yoyaku
+app.event('team_join', UserController.registerUser);
+
 // Other web requests are methods on receiver.router
 receiver.router.use(adminBro.options.rootPath, router);
 
