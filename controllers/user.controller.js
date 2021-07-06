@@ -14,7 +14,7 @@ const registerUser = async ({ event, client }) => {
       is_owner,
       tz: timezone,
     } = event.user;
-    const role = is_admin || is_owner ? 'ADMIN' : 'USER';
+    const role = Number(is_admin || is_owner);
 
     const team = await Team.findOne({ slackId: team_id });
 
