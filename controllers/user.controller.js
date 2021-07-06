@@ -1,7 +1,5 @@
-const moment = require('moment');
 const { Team } = require('../entities/team.entities');
 const { User } = require('../entities/user.entities');
-const { Reservation } = require('../entities/reservation.entities');
 
 const registerUser = async ({ event }) => {
   try {
@@ -32,8 +30,8 @@ const registerUser = async ({ event }) => {
     const defaultOffice = team.offices[0];
 
     const user = new User({
-      name: first_name,
-      username: last_name,
+      firstName: first_name,
+      lastName: last_name,
       phoneNumber: phone,
       email,
       slackId,
@@ -45,10 +43,9 @@ const registerUser = async ({ event }) => {
     });
 
     const savedUser = await user.save();
-    console.log(`Usuario creado con éxito ${savedUser}`);
-    return user;
+    return savedUser;
   } catch (error) {
-    console.error(error);
+    return error;
   }
 };
 

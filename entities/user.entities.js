@@ -6,8 +6,8 @@ const { Schema, model } = mongoose;
 const { ObjectId } = Schema.Types;
 
 const UserSchema = new Schema({
-  name: { type: String, default: '', index: true },
-  username: { type: String, default: '', index: true },
+  firstName: { type: String, default: '', index: true },
+  lastName: { type: String, default: '', index: true },
   phoneNumber: { type: String, default: null, index: true },
   email: { type: String, required: true },
   slackId: { type: String },
