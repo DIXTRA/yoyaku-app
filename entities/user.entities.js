@@ -12,7 +12,7 @@ const UserSchema = new Schema({
   email: { type: String, required: true },
   slackId: { type: String },
   role: { type: Number, default: 0, index: true },
-  encryptedPassword: { type: String, required: false, default: null },
+  encryptedPassword: { type: String },
   timezone: { type: String },
   team: { type: ObjectId, ref: 'Team' },
   office: { type: ObjectId, ref: 'Office' },

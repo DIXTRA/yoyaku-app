@@ -11,6 +11,7 @@ const { scopes } = require('./utils/scopes');
 const {
   storeInstallation,
   fetchInstallation,
+  intializeApp,
 } = require('./controllers/auth.controller');
 
 const PORT = process.env.PORT || 4000;
@@ -23,13 +24,17 @@ const receiver = new ExpressReceiver({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
   clientId: process.env.SLACK_CLIENT_ID,
   clientSecret: process.env.SLACK_CLIENT_SECRET,
-  token: process.env.SLACK_BOT_TOKEN,
   stateSecret: process.env.SLACK_STATE_SECRET,
   logLevel: LogLevel.DEBUG,
   scopes,
   installationStore: {
     storeInstallation,
     fetchInstallation,
+  },
+  installerOptions: {
+    callbackOptions: {
+      success: intializeApp,
+    },
   },
 });
 
