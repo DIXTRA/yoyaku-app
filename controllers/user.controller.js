@@ -3,16 +3,20 @@ const { Team } = require('../entities/team.entities');
 const { User } = require('../entities/user.entities');
 const { Reservation } = require('../entities/reservation.entities');
 
-const registerUser = async ({ event, client }) => {
+const registerUser = async ({ event }) => {
   try {
     const {
-      profile: userData,
+      profile,
       id: slackId,
       team_id,
       is_admin,
       is_owner,
       tz: timezone,
     } = event.user;
+    const {
+      first_name, last_name, phone, email, image_72,
+    } = profile;
+
     const role = Number(is_admin || is_owner);
 
     const team = await Team.findOne({ slackId: team_id });
@@ -25,17 +29,19 @@ const registerUser = async ({ event, client }) => {
 
     // By now password is not created from slack
     // First office in team is added to user by default
+    const defaultOffice = team.offices[0];
 
     const user = new User({
-      name: userData.real_name,
-      username: userData.display_name,
-      email: userData.email,
+      name: first_name,
+      username: last_name,
+      phoneNumber: phone,
+      email,
       slackId,
       role,
       timezone,
-      team,
-      office: team.offices[0],
-      profilePhoto: userData.image_512,
+      team: team._id,
+      office: defaultOffice._id,
+      profilePhoto: image_72,
     });
 
     const savedUser = await user.save();
