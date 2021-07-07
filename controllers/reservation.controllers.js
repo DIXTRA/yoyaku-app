@@ -130,29 +130,12 @@ const addReservation = async ({
     // Call views.open with the built-in client
     if (text) {
       const {
-        date, roomName, user, currentDate, formattedDate,
-      } = await basicInformation(text, body);
-
-      if (!user) {
-        throw ':scream: - Error: User not found.';
-      }
-
-      if (!formattedDate || !formattedDate.isValid()) {
-        throw ':upside_down_face: *- Hey there, date format must be DD/MM/YYYY!*';
-      }
-
-      const fullDate = formattedDate.toDate();
-
-      const invalidDate = !date || moment(fullDate).diff(currentDate, 'days') < 0;
-
-      if (invalidDate) {
-        throw ':upside_down_face: *- La fecha debe ser futura! *';
-      }
-
-      const room = await checkRoomExistence(body.user_id, say, roomName);
-      if (!room) {
-        throw ':upside_down_face: *- No se encontró una sala con ese nombre *';
-      }
+        user, fullDate, room, haveReserve,
+      } = await basicInformation(
+        text,
+        body,
+        say,
+      );
 
       const startOfWeek = moment(fullDate).startOf('isoWeek');
       const endOfWeek = moment(fullDate).endOf('isoWeek');
@@ -168,14 +151,7 @@ const addReservation = async ({
         throw ':upside_down_face: *- Alcanzaste el máximo de reservas esta semana *';
       }
 
-      const alreadyHaveReserve = await verifyAlreadyHaveReserve(
-        fullDate,
-        user.office,
-        room._id,
-        user._id,
-      );
-
-      if (alreadyHaveReserve) {
+      if (haveReserve) {
         throw ':upside_down_face: *- Ya tienes una reserva para este día *';
       }
 
@@ -564,35 +540,11 @@ const deleteReservation = async ({
   try {
     if (text) {
       const {
-        date, roomName, user, currentDate, formattedDate,
-      } = await basicInformation(text, body);
-
-      if (!user) {
-        throw ':scream: - Error: User not found.';
-      }
-
-      if (!formattedDate || !formattedDate.isValid()) {
-        throw ':upside_down_face: *- Hey there, date format must be DD/MM/YYYY!*';
-      }
-
-      const fullDate = formattedDate.toDate();
-
-      const invalidDate = !date || moment(fullDate).diff(currentDate, 'days') < 0;
-
-      if (invalidDate) {
-        throw ':upside_down_face: *- La fecha debe ser futura! *';
-      }
-
-      const room = await checkRoomExistence(body.user_id, say, roomName);
-      if (!room) {
-        throw ':upside_down_face: *- No se encontró una sala con ese nombre *';
-      }
-
-      const haveReserve = await verifyAlreadyHaveReserve(
-        fullDate,
-        user.office,
-        room._id,
-        user._id,
+        user, fullDate, room, haveReserve,
+      } = await basicInformation(
+        text,
+        body,
+        say,
       );
 
       if (!haveReserve) {
@@ -620,7 +572,7 @@ const deleteReservation = async ({
   }
 };
 
-const basicInformation = async (text, body) => {
+const basicInformation = async (text, body, say) => {
   const command = text.split(' ');
   const date = command[0];
   const roomName = command[1];
@@ -628,12 +580,38 @@ const basicInformation = async (text, body) => {
   const user = await User.findOne({ slackId });
   const currentDate = moment();
   const formattedDate = date && moment(date, 'DD/MM/YYYY');
+  const fullDate = formattedDate.toDate();
+  const invalidDate = !date || moment(fullDate).diff(currentDate, 'days') < 0;
+  const room = await checkRoomExistence(slackId, say, roomName);
+
+  if (!user) {
+    throw ':scream: - Error: User not found.';
+  }
+
+  if (!formattedDate || !formattedDate.isValid()) {
+    throw ':upside_down_face: *- Hey there, date format must be DD/MM/YYYY!*';
+  }
+
+  if (invalidDate) {
+    throw ':upside_down_face: *- La fecha debe ser futura! *';
+  }
+
+  if (!room) {
+    throw ':upside_down_face: *- No se encontró una sala con ese nombre *';
+  }
+
+  const haveReserve = await verifyAlreadyHaveReserve(
+    fullDate,
+    user.office,
+    room._id,
+    user._id,
+  );
+
   return {
-    date,
-    roomName,
     user,
-    currentDate,
-    formattedDate,
+    fullDate,
+    room,
+    haveReserve,
   };
 };
 
