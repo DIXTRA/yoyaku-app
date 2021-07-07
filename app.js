@@ -6,7 +6,7 @@ const AdminBro = require('admin-bro');
 const options = require('./admin/admin.options');
 const buildAdminRouter = require('./admin/admin.router');
 const ReservationController = require('./controllers/reservation.controllers');
-const CommonContorller = require('./controllers/common.controller');
+const CommonController = require('./controllers/common.controller');
 const { scopes } = require('./utils/scopes');
 const {
   storeInstallation,
@@ -40,7 +40,7 @@ const app = new App({
 
 app.command('/yoyaku', ReservationController.addReservation);
 app.command('/yoyaku-list', ReservationController.listReservationByDate);
-app.command('/yoyaku-help', CommonContorller.listCommands);
+app.command('/yoyaku-help', CommonController.listCommands);
 app.view('add_reserve', ReservationController.submitReserve);
 
 // Other web requests are methods on receiver.router
