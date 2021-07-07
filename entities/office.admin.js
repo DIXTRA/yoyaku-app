@@ -35,6 +35,50 @@ const options = {
         return request;
       },
     },
+    disableAssistanceToOffice: {
+      actionType: 'record',
+      icon: 'CheckboxIndeterminateFilled',
+      component: false,
+      isVisible: (context) => !!context.record.param('enabled'),
+      handler: async (req, res, context) => {
+        const { record, currentAdmin, h } = context;
+
+        const userCar = await Office.findById(record.param('_id'));
+        userCar.enabled = false;
+        await userCar.save();
+
+        const office = record.toJSON(currentAdmin);
+        office.params.enabled = false;
+
+        return {
+          record: office,
+          notice: { message: 'Successfully disabled visitors to the selected office', type: 'success' },
+          redirectUrl: h.listUrl('Office'),
+        };
+      },
+    },
+    enableAssistanceToOffice: {
+      actionType: 'record',
+      icon: 'CheckboxChecked',
+      component: false,
+      isVisible: (context) => !context.record.param('enabled'),
+      handler: async (req, res, context) => {
+        const { record, currentAdmin, h } = context;
+
+        const userCar = await Office.findById(record.param('_id'));
+        userCar.enabled = true;
+        await userCar.save();
+
+        const office = record.toJSON(currentAdmin);
+        office.params.enabled = true;
+
+        return {
+          record: office,
+          notice: { message: 'Successfully enabled visitors to the selected office', type: 'success' },
+          redirectUrl: h.listUrl('Office'),
+        };
+      },
+    },
   },
 };
 
