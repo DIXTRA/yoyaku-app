@@ -44,6 +44,7 @@ const app = new App({
 });
 
 app.command('/yoyaku', ReservationController.addReservation);
+app.command('/yoyaku-delete', ReservationController.deleteReservation);
 app.command('/yoyaku-list', ReservationController.listReservationByDate);
 app.command('/yoyaku-help', CommonController.listCommands);
 app.view('add_reserve', ReservationController.submitReserve);

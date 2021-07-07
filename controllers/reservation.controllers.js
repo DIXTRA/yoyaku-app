@@ -129,34 +129,13 @@ const addReservation = async ({
   try {
     // Call views.open with the built-in client
     if (text) {
-      const command = text.split(' ');
-      const date = command[0];
-      const roomName = command[1];
-      const slackId = body.user_id;
-      const user = await User.findOne({ slackId });
-      const currentDate = moment();
-      const formattedDate = date && moment(date, 'DD/MM/YYYY');
-
-      if (!user) {
-        throw ':scream: - Error: User not found.';
-      }
-
-      if (!formattedDate || !formattedDate.isValid()) {
-        throw ':upside_down_face: *- Hey there, date format must be DD/MM/YYYY!*';
-      }
-
-      const fullDate = formattedDate.toDate();
-
-      const invalidDate = !date || moment(fullDate).diff(currentDate, 'days') < 0;
-
-      if (invalidDate) {
-        throw ':upside_down_face: *- La fecha debe ser futura !*';
-      }
-
-      const room = await checkRoomExistence(body.user_id, say, roomName);
-      if (!room) {
-        throw ':upside_down_face: *- No se encontró una sala con ese nombre';
-      }
+      const {
+        user, fullDate, room, haveReserve,
+      } = await basicInformation(
+        text,
+        body,
+        say,
+      );
 
       const startOfWeek = moment(fullDate).startOf('isoWeek');
       const endOfWeek = moment(fullDate).endOf('isoWeek');
@@ -169,24 +148,17 @@ const addReservation = async ({
       const weekResevationByUser = await Reservation.find(query);
 
       if (weekResevationByUser.length > currentOffice.maxVisitsAWeek) {
-        throw ':upside_down_face: *- Alcanzaste el máximo de reservas esta semana';
+        throw ':upside_down_face: *- Alcanzaste el máximo de reservas esta semana *';
       }
 
-      const alreadyHaveReserve = await verifyAlreadyHaveReserve(
-        fullDate,
-        user.office,
-        room._id,
-        user._id,
-      );
-
-      if (alreadyHaveReserve) {
-        throw ':upside_down_face: *- Ya tienes una reserva para este día';
+      if (haveReserve) {
+        throw ':upside_down_face: *- Ya tienes una reserva para este día *';
       }
 
       const isRoomFull = await verifyRoomFull(fullDate, user.office, room._id);
 
       if (isRoomFull) {
-        throw ':upside_down_face: *- La sala seleccionada no tiene más horarios disponibles';
+        throw ':upside_down_face: *- La sala seleccionada no tiene más horarios disponibles *';
       }
 
       const reservation = await Reservation.create({
@@ -198,9 +170,9 @@ const addReservation = async ({
       });
 
       if (reservation) {
-        say('Tu reserva fue creada correctamente 🙌🏻 📩 📝');
+        say('*- Tu reserva fue creada correctamente * 🙌🏻 📩 📝');
       } else {
-        throw '  Uuups hubo un error al crear tu reserva 🙁 🥺 vuelve a internarlo más tarde';
+        throw '*- Uuups hubo un error al crear tu reserva 🙁 🥺 vuelve a internarlo más tarde *';
       }
     } else {
       await client.views.open({
@@ -559,8 +531,93 @@ const submitReserve = async ({
   });
 };
 
+const deleteReservation = async ({
+  client, ack, say, body,
+}) => {
+  await ack();
+  const { text } = body;
+
+  try {
+    if (text) {
+      const {
+        user, fullDate, room, haveReserve,
+      } = await basicInformation(
+        text,
+        body,
+        say,
+      );
+
+      if (!haveReserve) {
+        throw ':upside_down_face: *- No tienes una reserva para este día *';
+      }
+
+      const deletedReservation = await Reservation.findOneAndDelete({
+        date: fullDate,
+        user: user._id,
+        team: user.team,
+        office: user.office,
+        room: room._id,
+      });
+
+      if (deletedReservation) {
+        say('*- Tu reserva fue eliminada correctamente * 🙌🏻 📩 📝');
+      } else {
+        throw '*- Uuups hubo un error al eliminar tu reserva 🙁 🥺 vuelve a internarlo más tarde *';
+      }
+    } else {
+      throw '🤷‍♂️🧏‍♀️ *- El comando necesita parametros obligatorios, utiliza el comando /yoyaku-help para conocerlos *';
+    }
+  } catch (error) {
+    say(error);
+  }
+};
+
+const basicInformation = async (text, body, say) => {
+  const command = text.split(' ');
+  const date = command[0];
+  const roomName = command[1];
+  const slackId = body.user_id;
+  const user = await User.findOne({ slackId });
+  const currentDate = moment();
+  const formattedDate = date && moment(date, 'DD/MM/YYYY');
+  const fullDate = formattedDate.toDate();
+  const invalidDate = !date || moment(fullDate).diff(currentDate, 'days') < 0;
+  const room = await checkRoomExistence(slackId, say, roomName);
+
+  if (!user) {
+    throw ':scream: - Error: User not found.';
+  }
+
+  if (!formattedDate || !formattedDate.isValid()) {
+    throw ':upside_down_face: *- Hey there, date format must be DD/MM/YYYY!*';
+  }
+
+  if (invalidDate) {
+    throw ':upside_down_face: *- La fecha debe ser futura! *';
+  }
+
+  if (!room) {
+    throw ':upside_down_face: *- No se encontró una sala con ese nombre *';
+  }
+
+  const haveReserve = await verifyAlreadyHaveReserve(
+    fullDate,
+    user.office,
+    room._id,
+    user._id,
+  );
+
+  return {
+    user,
+    fullDate,
+    room,
+    haveReserve,
+  };
+};
+
 module.exports = {
   listReservationByDate,
   addReservation,
   submitReserve,
+  deleteReservation,
 };
