@@ -14,7 +14,7 @@ const {
   intializeApp,
 } = require('./controllers/auth.controller');
 
-const PORT = process.env.PORT || 4000;
+const PORT = 4000;
 
 const adminBro = new AdminBro(options);
 const router = buildAdminRouter(adminBro);
