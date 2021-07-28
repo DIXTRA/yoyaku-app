@@ -295,10 +295,10 @@ const addReservation = async ({
   }
 };
 
-const getRooms = async (slackId, say) => {
+const getRooms = async (slackId, respond) => {
   const user = await User.findOne({ slackId });
   if (!user) {
-    onlyVisibleToYou(':scream: - Error: User not found.', say);
+    onlyVisibleToYou(':scream: - Error: User not found.', respond);
     return;
   }
 
@@ -308,7 +308,7 @@ const getRooms = async (slackId, say) => {
   );
 
   if (!office) {
-    onlyVisibleToYou(':scream: - Error: Office not found.', say);
+    onlyVisibleToYou(':scream: - Error: Office not found.', respond);
     return;
   }
 
@@ -324,10 +324,10 @@ const getRooms = async (slackId, say) => {
   }));
 };
 
-const checkRoomExistence = async (slackId, say, roomName) => {
+const checkRoomExistence = async (slackId, respond, roomName) => {
   const user = await User.findOne({ slackId });
   if (!user) {
-    onlyVisibleToYou(':scream: - Error: User not found.', say);
+    onlyVisibleToYou(':scream: - Error: User not found.', respond);
     return;
   }
   const office = await Office.findById(user.office).populate(
@@ -336,7 +336,7 @@ const checkRoomExistence = async (slackId, say, roomName) => {
   );
 
   if (!office) {
-    onlyVisibleToYou(':scream: - Error: Office not found.', say);
+    onlyVisibleToYou(':scream: - Error: Office not found.', respond);
     return;
   }
 
@@ -548,7 +548,7 @@ const submitReserve = async ({
 };
 
 const deleteReservation = async ({
-  client, ack, say, body,
+  client, ack, respond, body,
 }) => {
   await ack();
   const { text } = body;
@@ -560,7 +560,7 @@ const deleteReservation = async ({
       } = await basicInformation(
         text,
         body,
-        say,
+        respond,
       );
 
       if (!haveReserve) {
@@ -578,7 +578,7 @@ const deleteReservation = async ({
       if (deletedReservation) {
         onlyVisibleToYou(
           '*- Tu reserva fue eliminada correctamente * 🙌🏻 📩 📝',
-          say,
+          respond,
         );
       } else {
         throw '*- Uuups hubo un error al eliminar tu reserva 🙁 🥺 vuelve a internarlo más tarde *';
@@ -587,11 +587,11 @@ const deleteReservation = async ({
       throw '🤷‍♂️🧏‍♀️ *- El comando necesita parametros obligatorios, utiliza el comando /yoyaku-help para conocerlos *';
     }
   } catch (error) {
-    onlyVisibleToYou(error, say);
+    onlyVisibleToYou(error, respond);
   }
 };
 
-const basicInformation = async (text, body, say) => {
+const basicInformation = async (text, body, respond) => {
   const command = text.split(' ');
   const date = command[0];
   const roomName = command[1];
@@ -601,7 +601,7 @@ const basicInformation = async (text, body, say) => {
   const formattedDate = date && moment(date, 'DD/MM/YYYY');
   const fullDate = formattedDate.toDate();
   const invalidDate = !date || moment(fullDate).diff(currentDate, 'days') < 0;
-  const room = await checkRoomExistence(slackId, say, roomName);
+  const room = await checkRoomExistence(slackId, respond, roomName);
 
   if (!user) {
     throw ':scream: - Error: User not found.';
