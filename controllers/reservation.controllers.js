@@ -29,7 +29,7 @@ const listReservationByDate = async ({
   } else {
     if (!moment(text, 'DD/MM/YYYY').isValid()) {
       onlyVisibleToYou(
-        ':upside_down_face: *- Las fechas deben tener el formato DD/MM/YYYY!*',
+        ':upside_down_face: *- Las fecha debe tener el formato DD/MM/YYYY!*',
         respond,
       );
       return;
@@ -64,8 +64,7 @@ const listReservationByDate = async ({
 
   const modalContent = newModal();
 
-  modalContent[0].text.text = `${date.format('DD/MM/YYYY')} - ${
-    reservations[0].office.name
+  modalContent[0].text.text = `${date.format('DD/MM/YYYY')} - ${reservations[0].office.name
   }`;
 
   for (let i = 0; i < reservations.length; i += 2) {
@@ -298,7 +297,7 @@ const addReservation = async ({
 const getRooms = async (slackId, respond) => {
   const user = await User.findOne({ slackId });
   if (!user) {
-    onlyVisibleToYou(':scream: - Error: User not found.', respond);
+    onlyVisibleToYou(':scream: - Error: Usuario no encontrado.', respond);
     return;
   }
 
@@ -308,7 +307,7 @@ const getRooms = async (slackId, respond) => {
   );
 
   if (!office) {
-    onlyVisibleToYou(':scream: - Error: Office not found.', respond);
+    onlyVisibleToYou(':scream: - Error: Oficina no encontrada.', respond);
     return;
   }
 
@@ -327,7 +326,7 @@ const getRooms = async (slackId, respond) => {
 const checkRoomExistence = async (slackId, respond, roomName) => {
   const user = await User.findOne({ slackId });
   if (!user) {
-    onlyVisibleToYou(':scream: - Error: User not found.', respond);
+    onlyVisibleToYou(':scream: - Error: Usuario no encontrado.', respond);
     return;
   }
   const office = await Office.findById(user.office).populate(
@@ -336,7 +335,7 @@ const checkRoomExistence = async (slackId, respond, roomName) => {
   );
 
   if (!office) {
-    onlyVisibleToYou(':scream: - Error: Office not found.', respond);
+    onlyVisibleToYou(':scream: - Error: Oficina no encontrada.', respond);
     return;
   }
 
@@ -356,7 +355,7 @@ const verifyRoomFull = async (date, office, room) => {
 
   const isRoomFull = roomCurrentReservations.length
     && roomCurrentReservations.length
-      >= roomCurrentReservations[0].room.maxCapacity;
+    >= roomCurrentReservations[0].room.maxCapacity;
 
   return isRoomFull;
 };
@@ -604,7 +603,7 @@ const basicInformation = async (text, body, respond) => {
   const room = await checkRoomExistence(slackId, respond, roomName);
 
   if (!user) {
-    throw ':scream: - Error: User not found.';
+    throw ':scream: - Error: Usuario no encontrado.';
   }
 
   if (!formattedDate || !formattedDate.isValid()) {
@@ -612,7 +611,7 @@ const basicInformation = async (text, body, respond) => {
   }
 
   if (invalidDate) {
-    throw ':upside_down_face: *- La fecha debe ser futura! *';
+    throw ':upside_down_face: *- Las fecha debe tener el formato DD/MM/YYYY!*';
   }
 
   if (!room) {
