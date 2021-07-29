@@ -7,6 +7,7 @@ const options = require('./admin/admin.options');
 const buildAdminRouter = require('./admin/admin.router');
 const ReservationController = require('./controllers/reservation.controllers');
 const UserController = require('./controllers/user.controller');
+const CommonController = require('./controllers/common.controller');
 const { scopes } = require('./utils/scopes');
 const {
   storeInstallation,
@@ -43,8 +44,10 @@ const app = new App({
   receiver,
 });
 
-app.command('/yoyaku-list', ReservationController.listReservationByDate);
 app.command('/yoyaku', ReservationController.addReservation);
+app.command('/yoyaku-delete', ReservationController.deleteReservation);
+app.command('/yoyaku-list', ReservationController.listReservationByDate);
+app.command('/yoyaku-help', CommonController.listCommands);
 app.view('add_reserve', ReservationController.submitReserve);
 
 // When a user joins the team, is added to yoyaku
