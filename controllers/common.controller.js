@@ -1,8 +1,8 @@
 const { commands } = require('../utils/commands');
 
-const listCommands = async ({ client, ack, say }) => {
+const listCommands = async ({ client, ack, respond }) => {
   await ack();
-  await say({
+  await respond({
     blocks: commands.map((command) => ({
       type: 'section',
       text: {
@@ -10,6 +10,7 @@ const listCommands = async ({ client, ack, say }) => {
         text: command.description,
       },
     })),
+    response_type: 'ephemeral',
   });
 };
 
