@@ -281,7 +281,7 @@ const addReservation = async ({
               },
               label: {
                 type: 'plain_text',
-                text: 'Label',
+                text: 'A que espacio vas?',
                 emoji: true,
               },
             },
@@ -536,7 +536,7 @@ const submitReserve = async ({
     if (!reservation) {
       message = 'Uuups hubo un error al crear tu reserva 🙁 🥺 vuelve a internarlo más tarde';
     } else {
-      message = 'Tu reserva fue creada correctamente 🙌🏻 📩 📝';
+      message = 'Tu reserva fue creada correctamente';
     }
   }
 
