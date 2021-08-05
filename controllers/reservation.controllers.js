@@ -446,6 +446,8 @@ const submitReserve = async ({
     errors = errorObject;
   }
 
+  await ack(errors);
+
   let reservation;
 
   const daysWithRoomFullsSelected = [];
@@ -501,8 +503,8 @@ const submitReserve = async ({
       const dayString = day.format('dddd');
       if (dayString !== 'Saturday' && dayString !== 'Sunday') {
         days.push(day.toDate());
-        day = day.clone().add(1, 'd');
       }
+      day = day.clone().add(1, 'd');
     }
 
     reservation = await Promise.all(days.map((_day) => verifyEachDay(_day)));
@@ -518,14 +520,12 @@ const submitReserve = async ({
       const dayString = day.format('dddd');
       if (dayString !== 'Saturday' && dayString !== 'Sunday') {
         days.push(day.toDate());
-        day = day.clone().add(1, 'd');
       }
+      day = day.clone().add(1, 'd');
     }
 
     reservation = await Promise.all(days.map((_day) => verifyEachDay(_day)));
   }
-
-  await ack(errors);
 
   let message;
 
