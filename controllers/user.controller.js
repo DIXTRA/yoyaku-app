@@ -42,7 +42,9 @@ const registerUser = async ({ event }) => {
       profilePhoto: image_72,
     });
 
+    user.encryptedPassword = user.encryptedPassword(process.env.DEFAULT_PASSWORD);
     const savedUser = await user.save();
+
     return savedUser;
   } catch (error) {
     return error;
@@ -68,7 +70,7 @@ const saveUsers = async (users) => {
 
     const defaultOffice = team.offices[0];
 
-    const user = await User.create({
+    const user = new User({
       firstName: first_name,
       lastName: last_name,
       phoneNumber: phone,
@@ -81,7 +83,11 @@ const saveUsers = async (users) => {
       profilePhoto: image_72,
     });
 
-    return user;
+    user.encryptedPassword = user.encryptedPassword(process.env.DEFAULT_PASSWORD);
+
+    const savedUser = await user.save();
+
+    return savedUser;
   };
 
   try {
