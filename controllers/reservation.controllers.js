@@ -283,7 +283,7 @@ const addReservation = async ({
               },
               label: {
                 type: 'plain_text',
-                text: 'Label',
+                text: 'A que espacio vas?',
                 emoji: true,
               },
             },
