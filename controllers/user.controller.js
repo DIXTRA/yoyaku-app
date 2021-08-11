@@ -85,9 +85,9 @@ const saveUsers = async (users) => {
 
     user.encryptedPassword = user.encryptedPassword(process.env.DEFAULT_PASSWORD);
 
-    await user.save();
+    const savedUser = await user.save();
 
-    return user;
+    return savedUser;
   };
 
   try {
