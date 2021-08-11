@@ -1,10 +1,8 @@
-const AdminBro = require("admin-bro");
-
 const {
   before: passwordBeforeHook,
   after: passwordAfterHook,
-} = require("../actions/password.hook");
-const { User } = require("./user.entities");
+} = require('../actions/password.hook');
+const { User } = require('./user.entities');
 
 /** @type {AdminBro.ResourceOptions} */
 const options = {
@@ -13,9 +11,19 @@ const options = {
       isVisible: false,
     },
     password: {
-      type: "password",
+      type: 'password',
+    },
+    email: {
+      isTitle: true,
+    },
+    slackId: {
+      isVisible: false,
+    },
+    role: {
+      isVisible: false,
     },
   },
+  listProperties: ['email', 'firstName', 'lastName'],
   actions: {
     new: {
       before: passwordBeforeHook,
