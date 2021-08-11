@@ -1,16 +1,16 @@
-const AdminBro = require("admin-bro");
-const bcrypt = require("bcrypt-nodejs");
+const AdminBro = require('admin-bro');
+const bcrypt = require('bcrypt');
 
 /** @type {AdminBro.Before} */
 const before = async (request) => {
-  if (request.method === "post") {
+  if (request.method === 'post') {
     const { password, ...otherParams } = request.payload;
 
     if (password) {
       const encryptedPassword = bcrypt.hashSync(
         password,
         bcrypt.genSaltSync(8),
-        null
+        null,
       );
 
       return {
@@ -22,6 +22,8 @@ const before = async (request) => {
       };
     }
   }
+
+  return request;
 };
 
 /** @type {AdminBro.After<AdminBro.ActionResponse} */
