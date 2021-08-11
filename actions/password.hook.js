@@ -1,5 +1,5 @@
 const AdminBro = require('admin-bro');
-const bcrypt = require('bcrypt-nodejs');
+const bcrypt = require('bcrypt');
 
 /** @type {AdminBro.Before} */
 const before = async (request) => {

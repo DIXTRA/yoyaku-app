@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const paginator = require('mongoose-paginate');
-const bcrypt = require('bcrypt-nodejs');
+const bcrypt = require('bcrypt');
 
 const { Schema, model } = mongoose;
 const { ObjectId } = Schema.Types;
@@ -33,7 +33,7 @@ UserSchema.plugin(paginator);
 UserSchema.methods.generateHash = (password) => bcrypt.hashSync(password, bcrypt.genSaltSync(8), null);
 
 // checking if password is valid
-UserSchema.methods.validPassword = async (password) => bcrypt.compareSync(password, this.password);
+UserSchema.methods.validPassword = async (password, passHash) => bcrypt.compare(password, passHash);
 
 UserSchema.methods.generateToken = () => {
   const stringUserId = `${this._id}`;
