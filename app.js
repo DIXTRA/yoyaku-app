@@ -95,8 +95,8 @@ receiver.router.use(adminBro.options.rootPath, router);
     });
     await app.start(PORT);
     console.log('⚡️ Bolt app is running!');
-  } catch (e) {
-    console.log('el error', e);
+  } catch (error) {
+    throw new Error(error);
   }
 })();
 
