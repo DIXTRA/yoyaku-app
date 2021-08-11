@@ -3,6 +3,7 @@ const moment = require('moment');
 const { Reservation } = require('../entities/reservation.entities');
 const { User } = require('../entities/user.entities');
 const { Office } = require('../entities/office.entities');
+const { isWeekend } = require('../utils/constants');
 
 const onlyVisibleToYou = (text, respond) => {
   respond({
@@ -64,7 +65,8 @@ const listReservationByDate = async ({
 
   const modalContent = newModal();
 
-  modalContent[0].text.text = `${date.format('DD/MM/YYYY')} - ${reservations[0].office.name
+  modalContent[0].text.text = `${date.format('DD/MM/YYYY')} - ${
+    reservations[0].office.name
   }`;
 
   for (let i = 0; i < reservations.length; i += 2) {
@@ -236,7 +238,7 @@ const addReservation = async ({
                   {
                     text: {
                       type: 'plain_text',
-                      text: 'Solo este día',
+                      text: 'No se repite',
                       emoji: true,
                     },
                     value: 'day',
@@ -244,7 +246,7 @@ const addReservation = async ({
                   {
                     text: {
                       type: 'plain_text',
-                      text: 'Esta semana',
+                      text: 'Todos los dias laborables de esta semana',
                       emoji: true,
                     },
                     value: 'week',
@@ -252,7 +254,7 @@ const addReservation = async ({
                   {
                     text: {
                       type: 'plain_text',
-                      text: 'Este mes',
+                      text: 'Todos los dias laborables del mes corriente',
                       emoji: true,
                     },
                     value: 'month',
@@ -355,7 +357,7 @@ const verifyRoomFull = async (date, office, room) => {
 
   const isRoomFull = roomCurrentReservations.length
     && roomCurrentReservations.length
-    >= roomCurrentReservations[0].room.maxCapacity;
+      >= roomCurrentReservations[0].room.maxCapacity;
 
   return isRoomFull;
 };
@@ -445,7 +447,11 @@ const submitReserve = async ({
     errors = errorObject;
   }
 
+  await ack(errors);
+
   let reservation;
+
+  const daysWithRoomFullsSelected = [];
 
   const verifyEachDay = async (_day) => {
     const repeteadDay = await verifyAlreadyHaveReserve(
@@ -457,22 +463,12 @@ const submitReserve = async ({
     const roomFull = await verifyRoomFull(_day, user.office, room.value);
 
     if (repeteadDay) {
-      errorObject.errors = {
-        date_input: `No es posible agendarte, ya tienes una reserva para el día ${moment(
-          _day,
-        ).format('DD/MM/YYYY')}`,
-      };
-      errors = errorObject;
       return;
     }
 
     if (roomFull) {
-      errorObject.errors = {
-        date_input: `No es posible agendarte, el día ${moment(_day).format(
-          'DD/MM/YYYY',
-        )} tiene la sala llena`,
-      };
-      errors = errorObject;
+      const dayFormatted = moment(_day).format('DD/MM/YYYY');
+      daysWithRoomFullsSelected.push(dayFormatted);
       return;
     }
 
@@ -505,7 +501,10 @@ const submitReserve = async ({
     let day = start;
 
     while (day <= end) {
-      days.push(day.toDate());
+      const dayString = day.format('dddd');
+      if (!isWeekend(dayString)) {
+        days.push(day.toDate());
+      }
       day = day.clone().add(1, 'd');
     }
 
@@ -519,24 +518,30 @@ const submitReserve = async ({
     let day = start;
 
     while (day <= end) {
-      days.push(day.toDate());
+      const dayString = day.format('dddd');
+      if (!isWeekend(dayString)) {
+        days.push(day.toDate());
+      }
       day = day.clone().add(1, 'd');
     }
 
     reservation = await Promise.all(days.map((_day) => verifyEachDay(_day)));
   }
 
-  await ack(errors);
-
   let message;
 
   const hasErrors = Object.keys(errors).length;
+  const roomsFullMessage = daysWithRoomFullsSelected.length
+    ? `\nOmitimos los días: ${daysWithRoomFullsSelected.map(
+      (day) => day,
+    )} porque la sala se encontraba llena`
+    : '';
 
   if (!hasErrors) {
     if (!reservation) {
       message = 'Uuups hubo un error al crear tu reserva 🙁 🥺 vuelve a internarlo más tarde';
     } else {
-      message = 'Tu reserva fue creada correctamente';
+      message = `Tu reserva fue creada correctamente 🙌🏻 📩 📝 ${roomsFullMessage}`;
     }
   }
 
