@@ -545,12 +545,10 @@ const submitReserve = async ({
     }
   }
 
-  if (message) {
-    await client.chat.postMessage({
-      channel: body.user.id,
-      text: message,
-    });
-  }
+  await client.chat.postMessage({
+    channel: body.user.id,
+    text: message,
+  });
 };
 
 const deleteReservation = async ({
