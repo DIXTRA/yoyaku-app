@@ -3,6 +3,7 @@ const moment = require('moment');
 const { Reservation } = require('../entities/reservation.entities');
 const { User } = require('../entities/user.entities');
 const { Office } = require('../entities/office.entities');
+const { isWeekend } = require('../utils/constants');
 
 const onlyVisibleToYou = (text, respond) => {
   respond({
@@ -466,8 +467,8 @@ const submitReserve = async ({
     }
 
     if (roomFull) {
-      const dayFormated = `${moment(_day).format('DD/MM/YYYY')}`;
-      daysWithRoomFullsSelected.push(dayFormated);
+      const dayFormatted = moment(_day).format('DD/MM/YYYY');
+      daysWithRoomFullsSelected.push(dayFormatted);
       return;
     }
 
@@ -501,7 +502,7 @@ const submitReserve = async ({
 
     while (day <= end) {
       const dayString = day.format('dddd');
-      if (dayString !== 'Saturday' && dayString !== 'Sunday') {
+      if (!isWeekend(dayString)) {
         days.push(day.toDate());
       }
       day = day.clone().add(1, 'd');
@@ -518,7 +519,7 @@ const submitReserve = async ({
 
     while (day <= end) {
       const dayString = day.format('dddd');
-      if (dayString !== 'Saturday' && dayString !== 'Sunday') {
+      if (!isWeekend(dayString)) {
         days.push(day.toDate());
       }
       day = day.clone().add(1, 'd');
