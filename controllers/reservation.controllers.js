@@ -377,11 +377,6 @@ const verifyAlreadyHaveReserve = async (date, office, room, user) => {
   return checkReserve;
 };
 
-const isOfficeEnabled = async (office) => {
-  return await Office.findOne({
-    office})['enabled'];
-};
-
 const submitReserve = async ({
   ack, body, view, client,
 }) => {
