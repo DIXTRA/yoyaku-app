@@ -159,6 +159,10 @@ const addReservation = async ({
       };
       const currentOffice = await Office.findById(user.office);
 
+      if (!currentOffice.enabled) {
+        throw ':upside_down_face: *- La oficina no esta disponible *';
+      }
+
       const weekResevationByUser = await Reservation.find(query);
 
       if (weekResevationByUser.length > currentOffice.maxVisitsAWeek) {
@@ -402,7 +406,7 @@ const submitReserve = async ({
     room.value,
     user._id,
   );
-
+  
   const weekResevationByUser = await Reservation.find(query);
 
   if (invalidDate) {
@@ -429,6 +433,13 @@ const submitReserve = async ({
   if (isRoomFull) {
     errorObject.errors = {
       site_input: 'No hay lugares disponible en esta sala',
+    };
+    errors = errorObject;
+  }
+
+  if (!currentOffice.enabled) {
+    errorObject.errors = {
+      site_input: 'La oficina no esta disponible',
     };
     errors = errorObject;
   }
