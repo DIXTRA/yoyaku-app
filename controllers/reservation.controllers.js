@@ -69,7 +69,7 @@ const listReservationByDate = async ({
     reservations[0].office.name
   }`;
 
-  for (let i = 0; i < reservations.length; i += 2) {
+  for (let i = 0; i <= reservations.length; i += 2) {
     let userData = reservations[i].user;
     userData.name = `${userData.firstName} ${userData.lastName}`;
     const row = {
