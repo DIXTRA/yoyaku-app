@@ -40,10 +40,8 @@ const listReservationByDate = async ({
 
   const user = await User.findOne({ slackId: slackUserId });
   if (!user) {
-    if (!user) {
-      onlyVisibleToYou(':scream: - Error: Usuario no encontrado.', respond);
-      return;
-    }
+    onlyVisibleToYou(':scream: - Error: Usuario no encontrado.', respond);
+    return;
   }
 
   const reservations = await Reservation.find({
@@ -69,7 +67,7 @@ const listReservationByDate = async ({
     reservations[0].office.name
   }`;
 
-  for (let i = 0; i < reservations.length; i += 2) {
+  for (let i = 0; i < reservations.length; i += 1) {
     let userData = reservations[i].user;
     userData.name = `${userData.firstName} ${userData.lastName}`;
     const row = {
